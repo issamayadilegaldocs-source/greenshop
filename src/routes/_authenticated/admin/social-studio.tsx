@@ -6,7 +6,11 @@ import { SocialMarketingStudio } from "@/components/admin/ai/SocialMarketingStud
 import { useI18n } from "@/lib/i18n";
 
 const searchSchema = z.object({
-  productId: z.string().uuid().optional().catch(undefined),
+  productId: z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    .optional()
+    .catch(undefined),
 });
 
 export const Route = createFileRoute("/_authenticated/admin/social-studio")({

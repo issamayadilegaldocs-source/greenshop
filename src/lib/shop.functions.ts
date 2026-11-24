@@ -390,6 +390,9 @@ export const SHOP_SORTS = [
 export type ShopSort = (typeof SHOP_SORTS)[number];
 export const SHOP_PAGE_SIZE = 12;
 
+const pgUuid = () =>
+  z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
 const shopInput = z.object({
   c: z.string().max(120).optional(),
   q: z.string().max(120).optional(),
@@ -397,7 +400,7 @@ const shopInput = z.object({
   page: z.number().int().min(1).max(500).optional(),
   min: z.number().min(0).max(1_000_000).optional(),
   max: z.number().min(0).max(1_000_000).optional(),
-  f: z.record(z.string().uuid(), z.array(z.string().uuid()).max(30)).optional(),
+  f: z.record(pgUuid(), z.array(pgUuid()).max(30)).optional(),
 });
 export type ShopInput = z.input<typeof shopInput>;
 
@@ -1305,7 +1308,7 @@ const createOrderInput = z.object({
 });
 
 const createOrderResult = z.object({
-  order_id: z.string().uuid(),
+  order_id: pgUuid(),
   reference: z.string().min(1),
   total: z.number(),
   has_seller_items: z.boolean().optional(),
@@ -1338,7 +1341,7 @@ const trackOrderInput = z.object({
 });
 
 const trackedOrderSchema = z.object({
-  id: z.string().uuid(),
+  id: pgUuid(),
   reference: z.string(),
   status: z.string(),
   payment_status: z.string(),

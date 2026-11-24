@@ -8,8 +8,13 @@ const optionalText = (max: number) =>
     .nullable()
     .transform((v) => (v ? v : null));
 
+const pgUuid = () =>
+  z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, "UUID invalide");
+
 export const descriptionInputSchema = z.object({
-  templateId: z.string().uuid(),
+  templateId: pgUuid(),
   productName: z.string().trim().min(2, "Nom du produit trop court").max(150),
   categoryPath: optionalText(300),
   brand: optionalText(80),
