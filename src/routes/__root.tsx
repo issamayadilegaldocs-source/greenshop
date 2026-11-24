@@ -90,16 +90,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Maison Noura — Le vestiaire tunisien" },
+      { title: "Maison Noura — Mode, Audio, Électroménager & Maison" },
       {
         name: "description",
-        content: "Maison Noura : des vêtements en coton et en lin, pensés en Tunisie.",
+        content:
+          "Maison Noura : mode, audio, petit électroménager et déco, livrés partout en Tunisie.",
       },
       { name: "author", content: "Maison Noura" },
       { property: "og:title", content: "Maison Noura" },
       {
         property: "og:description",
-        content: "Un vestiaire contemporain pensé en Tunisie, avec paiement à la livraison.",
+        content: "Mode, audio, électroménager et maison en Tunisie, avec paiement à la livraison.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

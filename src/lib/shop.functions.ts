@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { supabasePublishableKey, supabaseUrl } from "@/integrations/supabase/env";
 import { createSupabaseFetch } from "@/integrations/supabase/fetch";
-import { CLOTHING_CATEGORY_SLUGS, MOCK_CATEGORIES, type PublicCategory } from "./catalog.functions";
+import { MOCK_CATEGORIES, type PublicCategory } from "./catalog.functions";
 
 /** Read-only client with the publishable key; RLS limits it to published catalog rows. */
 const publicClient = createServerOnlyFn(() => {
@@ -55,11 +55,10 @@ const CARD_COLUMNS =
 const CATEGORY_COLUMNS =
   "id,parent_id,name_fr,name_ar,slug,description_fr,description_ar,image_url,display_order";
 
-async function getClothingCategories(sb: Sb): Promise<PublicCategory[]> {
+async function getActiveCategories(sb: Sb): Promise<PublicCategory[]> {
   const { data, error } = await sb
     .from("categories")
     .select(CATEGORY_COLUMNS)
-    .in("slug", [...CLOTHING_CATEGORY_SLUGS])
     .eq("is_active", true)
     .order("display_order")
     .order("name_fr");
@@ -173,19 +172,139 @@ export const MOCK_PRODUCTS: ProductCardData[] = [
     in_stock: true,
     category_slug: "robes",
   },
+  {
+    id: "prod-casque-aura-anc",
+    slug: "casque-aura-anc",
+    name_fr: "Casque sans fil Aura ANC",
+    name_ar: "سماعة رأس لاسلكية أورا ANC",
+    brand: "Maison Noura Audio",
+    price: 249.0,
+    promo_price: 219.0,
+    image: "/demo/casque-audio.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: true,
+    in_stock: true,
+    category_slug: "casques-ecouteurs",
+  },
+  {
+    id: "prod-ecouteurs-nuage-buds",
+    slug: "ecouteurs-nuage-buds",
+    name_fr: "Écouteurs sans fil Nuage Buds",
+    name_ar: "سماعات أذن لاسلكية نواج بودز",
+    brand: "Maison Noura Audio",
+    price: 139.0,
+    promo_price: null,
+    image: "/demo/ecouteurs-sans-fil.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: true,
+    in_stock: true,
+    category_slug: "casques-ecouteurs",
+  },
+  {
+    id: "prod-enceinte-brise-mini",
+    slug: "enceinte-brise-mini",
+    name_fr: "Enceinte nomade Brise Mini",
+    name_ar: "مكبر صوت لاسلكي بريز ميني",
+    brand: "Maison Noura Audio",
+    price: 169.0,
+    promo_price: null,
+    image: "/demo/enceinte-bluetooth.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: false,
+    in_stock: true,
+    category_slug: "enceintes-sans-fil",
+  },
+  {
+    id: "prod-machine-espresso-barista",
+    slug: "machine-espresso-barista",
+    name_fr: "Machine espresso Barista Compact",
+    name_ar: "آلة قهوة إسبريسو باريستا المدمجة",
+    brand: "Maison Noura Cuisine",
+    price: 489.0,
+    promo_price: 449.0,
+    image: "/demo/machine-espresso.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: true,
+    in_stock: true,
+    category_slug: "cafe-petit-dejeuner",
+  },
+  {
+    id: "prod-bouilloire-atelier",
+    slug: "bouilloire-atelier",
+    name_fr: "Bouilloire col de cygne Atelier",
+    name_ar: "غلاية كهربائية بعنق منحني أتيليه",
+    brand: "Maison Noura Cuisine",
+    price: 145.0,
+    promo_price: null,
+    image: "/demo/bouilloire-electrique.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: false,
+    in_stock: true,
+    category_slug: "cafe-petit-dejeuner",
+  },
+  {
+    id: "prod-friteuse-airpure",
+    slug: "friteuse-airpure",
+    name_fr: "Friteuse sans huile AirPure 4,5 L",
+    name_ar: "قلاية هوائية بدون زيت إير بيور 4.5 لتر",
+    brand: "Maison Noura Cuisine",
+    price: 299.0,
+    promo_price: 269.0,
+    image: "/demo/air-fryer.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: true,
+    in_stock: true,
+    category_slug: "cuisine-preparation",
+  },
+  {
+    id: "prod-lampe-table-halo",
+    slug: "lampe-table-halo",
+    name_fr: "Lampe de table Halo sans fil",
+    name_ar: "مصباح طاولة لاسلكي هالو",
+    brand: "Maison Noura Maison",
+    price: 119.0,
+    promo_price: null,
+    image: "/demo/lampe-table.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: true,
+    in_stock: true,
+    category_slug: "luminaire-ambiance",
+  },
+  {
+    id: "prod-duo-mugs-gres",
+    slug: "duo-mugs-gres",
+    name_fr: "Duo de mugs en grès mat",
+    name_ar: "طقم كوبين من الخزف المطفي",
+    brand: "Maison Noura Maison",
+    price: 54.0,
+    promo_price: null,
+    image: "/demo/mugs-ceramique.jpg",
+    rating_avg: 0,
+    rating_count: 0,
+    is_featured: false,
+    in_stock: true,
+    category_slug: "arts-de-la-table",
+  },
 ];
 
 /* ---------------- Home ---------------- */
 
 export const getHomeProducts = createServerFn({ method: "GET" }).handler(async () => {
   const sb = publicClient();
-  const clothingCategories = await getClothingCategories(sb);
-  const categoryIds = clothingCategories.map((c) => c.id);
+  const activeCategories = await getActiveCategories(sb);
+  const categoryIds = activeCategories.map((c) => c.id);
   if (!categoryIds.length) {
     return {
-      featured: MOCK_PRODUCTS.filter((p) => p.is_featured),
-      newest: MOCK_PRODUCTS,
-      best: { kind: "best" as const, items: MOCK_PRODUCTS },
+      featured: MOCK_PRODUCTS.filter((p) => p.is_featured).slice(0, 8),
+      newest: MOCK_PRODUCTS.slice(0, 8),
+      best: { kind: "deals" as const, items: MOCK_PRODUCTS.filter((p) => p.promo_price != null) },
     };
   }
   const [featured, newest, best, deals] = await Promise.all([
@@ -325,8 +444,8 @@ export const listShopProducts = createServerFn({ method: "GET" })
   .inputValidator((input: ShopInput) => shopInput.parse(input))
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const clothingCategories = await getClothingCategories(sb);
-    if (!clothingCategories.length) {
+    const activeCategories = await getActiveCategories(sb);
+    if (!activeCategories.length) {
       return getMockShopResult(
         data,
         data.c ? (MOCK_CATEGORIES.find((c) => c.slug === data.c) ?? null) : null,
@@ -334,7 +453,7 @@ export const listShopProducts = createServerFn({ method: "GET" })
     }
     let category: PublicCategory | null = null;
     if (data.c) {
-      category = clothingCategories.find((c) => c.slug === data.c) ?? null;
+      category = activeCategories.find((c) => c.slug === data.c) ?? null;
       if (!category) {
         return getMockShopResult(data, MOCK_CATEGORIES.find((c) => c.slug === data.c) ?? null);
       }
@@ -364,7 +483,7 @@ export const listShopProducts = createServerFn({ method: "GET" })
     const items = await loadCards(
       sb,
       (rows ?? []).map((r) => r.product_id),
-      clothingCategories.map((c) => c.id),
+      activeCategories.map((c) => c.id),
     );
     if (
       !items.length &&
@@ -470,7 +589,14 @@ function getMockProductDetail(slug: string): {
   const card = MOCK_PRODUCTS.find((p) => p.slug === slug);
   if (!card) return null;
 
-  const details = {
+  type MockDetailEntry = {
+    sizes?: readonly string[];
+    stock: number;
+    warranty?: string | null;
+    colors: readonly { value: string; fr: string; ar: string; hex: string }[];
+    specs: readonly Spec[];
+  };
+  const details: Record<string, MockDetailEntry> = {
     "tshirt-coton-bio": {
       sizes: ["S", "M", "L", "XL"],
       stock: 14,
@@ -478,8 +604,20 @@ function getMockProductDetail(slug: string): {
         { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
         { value: "noir", fr: "Noir", ar: "أسود", hex: "#252321" },
       ],
-      material: { fr: "100 % coton peigné", ar: "قطن ممشط 100٪" },
-      care: { fr: "Lavage en machine à 30 °C", ar: "غسيل آلي عند 30 درجة" },
+      specs: [
+        {
+          name_fr: "Matière",
+          name_ar: "الخامة",
+          value_fr: "100 % coton peigné",
+          value_ar: "قطن ممشط 100٪",
+        },
+        {
+          name_fr: "Entretien",
+          name_ar: "العناية",
+          value_fr: "Lavage en machine à 30 °C",
+          value_ar: "غسيل آلي عند 30 درجة",
+        },
+      ],
     },
     "sweat-capuche-molleton": {
       sizes: ["M", "L", "XL"],
@@ -488,11 +626,20 @@ function getMockProductDetail(slug: string): {
         { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
         { value: "noir", fr: "Noir", ar: "أسود", hex: "#252321" },
       ],
-      material: {
-        fr: "80 % coton, 20 % polyester recyclé",
-        ar: "80٪ قطن و20٪ بوليستر معاد تدويره",
-      },
-      care: { fr: "Lavage en machine à 30 °C, sur l’envers", ar: "غسيل آلي عند 30 درجة من الداخل" },
+      specs: [
+        {
+          name_fr: "Matière",
+          name_ar: "الخامة",
+          value_fr: "80 % coton, 20 % polyester recyclé",
+          value_ar: "80٪ قطن و20٪ بوليستر معاد تدويره",
+        },
+        {
+          name_fr: "Entretien",
+          name_ar: "العناية",
+          value_fr: "Lavage en machine à 30 °C, sur l’envers",
+          value_ar: "غسيل آلي عند 30 درجة من الداخل",
+        },
+      ],
     },
     "chemise-lin": {
       sizes: ["S", "M", "L", "XL"],
@@ -501,8 +648,20 @@ function getMockProductDetail(slug: string): {
         { value: "sable", fr: "Sable", ar: "رملي", hex: "#C9B89F" },
         { value: "bleu-ciel", fr: "Bleu ciel", ar: "أزرق سماوي", hex: "#A9C6D8" },
       ],
-      material: { fr: "100 % lin lavé", ar: "كتان مغسول 100٪" },
-      care: { fr: "Lavage délicat à 30 °C", ar: "غسيل لطيف عند 30 درجة" },
+      specs: [
+        {
+          name_fr: "Matière",
+          name_ar: "الخامة",
+          value_fr: "100 % lin lavé",
+          value_ar: "كتان مغسول 100٪",
+        },
+        {
+          name_fr: "Entretien",
+          name_ar: "العناية",
+          value_fr: "Lavage délicat à 30 °C",
+          value_ar: "غسيل لطيف عند 30 درجة",
+        },
+      ],
     },
     "robe-ete-fleurie": {
       sizes: ["XS", "S", "M", "L"],
@@ -511,20 +670,192 @@ function getMockProductDetail(slug: string): {
         { value: "terracotta", fr: "Terracotta", ar: "طوبي", hex: "#B66B54" },
         { value: "olive", fr: "Olive", ar: "زيتوني", hex: "#737A55" },
       ],
-      material: { fr: "100 % viscose", ar: "فسكوز 100٪" },
-      care: { fr: "Lavage délicat à 30 °C", ar: "غسيل لطيف عند 30 درجة" },
+      specs: [
+        {
+          name_fr: "Matière",
+          name_ar: "الخامة",
+          value_fr: "100 % viscose",
+          value_ar: "فسكوز 100٪",
+        },
+        {
+          name_fr: "Entretien",
+          name_ar: "العناية",
+          value_fr: "Lavage délicat à 30 °C",
+          value_ar: "غسيل لطيف عند 30 درجة",
+        },
+      ],
     },
-  } as const;
-  const detail = details[slug as keyof typeof details];
+    "casque-aura-anc": {
+      stock: 12,
+      warranty: "2 ans",
+      colors: [
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+        { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
+        { value: "noir", fr: "Noir mat", ar: "أسود مطفي", hex: "#252321" },
+      ],
+      specs: [
+        {
+          name_fr: "Autonomie",
+          name_ar: "عمر البطارية",
+          value_fr: "Jusqu’à 40 h",
+          value_ar: "حتى 40 ساعة",
+        },
+        {
+          name_fr: "Connectivité",
+          name_ar: "الاتصال",
+          value_fr: "Bluetooth 5.3 & USB-C",
+          value_ar: "بلوتوث 5.3 و USB-C",
+        },
+      ],
+    },
+    "ecouteurs-nuage-buds": {
+      stock: 18,
+      warranty: "2 ans",
+      colors: [
+        { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+        { value: "noir", fr: "Noir mat", ar: "أسود مطفي", hex: "#252321" },
+      ],
+      specs: [
+        {
+          name_fr: "Autonomie",
+          name_ar: "عمر البطارية",
+          value_fr: "30 h avec boîtier",
+          value_ar: "30 ساعة مع العلبة",
+        },
+        {
+          name_fr: "Connectivité",
+          name_ar: "الاتصال",
+          value_fr: "Bluetooth 5.3 & USB-C",
+          value_ar: "بلوتوث 5.3 و USB-C",
+        },
+      ],
+    },
+    "enceinte-brise-mini": {
+      stock: 10,
+      warranty: "2 ans",
+      colors: [
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+        { value: "sable", fr: "Sable", ar: "رملي", hex: "#C9B89F" },
+      ],
+      specs: [
+        {
+          name_fr: "Autonomie",
+          name_ar: "عمر البطارية",
+          value_fr: "18 heures",
+          value_ar: "18 ساعة",
+        },
+        {
+          name_fr: "Connectivité",
+          name_ar: "الاتصال",
+          value_fr: "Bluetooth 5.3, IP67",
+          value_ar: "بلوتوث 5.3، IP67",
+        },
+      ],
+    },
+    "machine-espresso-barista": {
+      stock: 6,
+      warranty: "2 ans",
+      colors: [
+        { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+        { value: "noir", fr: "Noir mat", ar: "أسود مطفي", hex: "#252321" },
+      ],
+      specs: [
+        {
+          name_fr: "Puissance",
+          name_ar: "القدرة",
+          value_fr: "1350 W — 15 bars",
+          value_ar: "1350 واط — 15 بار",
+        },
+        {
+          name_fr: "Capacité",
+          name_ar: "السعة",
+          value_fr: "Réservoir 1,5 L",
+          value_ar: "خزان 1.5 لتر",
+        },
+      ],
+    },
+    "bouilloire-atelier": {
+      stock: 11,
+      warranty: "2 ans",
+      colors: [
+        { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
+        { value: "noir", fr: "Noir mat", ar: "أسود مطفي", hex: "#252321" },
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+      ],
+      specs: [
+        { name_fr: "Puissance", name_ar: "القدرة", value_fr: "1200 W", value_ar: "1200 واط" },
+        {
+          name_fr: "Capacité",
+          name_ar: "السعة",
+          value_fr: "0,9 L — Col de cygne",
+          value_ar: "0.9 لتر",
+        },
+      ],
+    },
+    "friteuse-airpure": {
+      stock: 9,
+      warranty: "2 ans",
+      colors: [
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+        { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
+        { value: "noir", fr: "Noir mat", ar: "أسود مطفي", hex: "#252321" },
+      ],
+      specs: [
+        { name_fr: "Puissance", name_ar: "القدرة", value_fr: "1500 W", value_ar: "1500 واط" },
+        { name_fr: "Capacité", name_ar: "السعة", value_fr: "4,5 L", value_ar: "4.5 لتر" },
+      ],
+    },
+    "lampe-table-halo": {
+      stock: 14,
+      warranty: "1 an",
+      colors: [
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+        { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
+        { value: "sable", fr: "Sable", ar: "رملي", hex: "#C9B89F" },
+      ],
+      specs: [
+        {
+          name_fr: "Matière",
+          name_ar: "الخامة",
+          value_fr: "Aluminium thermolaqué mat",
+          value_ar: "ألمنيوم مطلي مطفي",
+        },
+        {
+          name_fr: "Dimensions",
+          name_ar: "الأبعاد",
+          value_fr: "Ø 16 × H 28 cm",
+          value_ar: "16 × 28 سم",
+        },
+      ],
+    },
+    "duo-mugs-gres": {
+      stock: 20,
+      colors: [
+        { value: "sauge", fr: "Vert sauge", ar: "أخضر مريمي", hex: "#9BA58D" },
+        { value: "ecru", fr: "Écru", ar: "عاجي", hex: "#E9E0D2" },
+        { value: "terracotta", fr: "Terracotta", ar: "طوبي", hex: "#B66B54" },
+      ],
+      specs: [
+        {
+          name_fr: "Matière",
+          name_ar: "الخامة",
+          value_fr: "Grès émaillé mat",
+          value_ar: "خزف مطفي",
+        },
+        {
+          name_fr: "Dimensions",
+          name_ar: "الأبعاد",
+          value_fr: "Lot de 2 × 320 ml",
+          value_ar: "قطعتان × 320 مل",
+        },
+      ],
+    },
+  };
+  const detail = details[slug];
   if (!detail) return null;
 
-  const sizeOptions: FacetOption[] = detail.sizes.map((size) => ({
-    id: `opt-${size.toLowerCase()}`,
-    value: size,
-    label_fr: size,
-    label_ar: size,
-    color_hex: null,
-  }));
   const colorOptions: FacetOption[] = detail.colors.map((color) => ({
     id: `opt-${color.value}`,
     value: color.value,
@@ -532,51 +863,57 @@ function getMockProductDetail(slug: string): {
     label_ar: color.ar,
     color_hex: color.hex,
   }));
-  const axes: VariantAxis[] = [
-    {
+  const axes: VariantAxis[] = [];
+  if (detail.sizes?.length) {
+    axes.push({
       id: "axis-size",
       name_fr: "Taille",
       name_ar: "المقاس",
       type: "dropdown",
-      options: sizeOptions,
-    },
-    {
-      id: "axis-color",
-      name_fr: "Couleur",
-      name_ar: "اللون",
-      type: "color",
-      options: colorOptions,
-    },
-  ];
-  const variants: PublicVariant[] = detail.sizes.flatMap((size) =>
-    detail.colors.map((color) => ({
-      id: `var-${card.id}-${size.toLowerCase()}-${color.value}`,
-      sku: `${card.slug.toUpperCase()}-${size}-${color.value.toUpperCase()}`,
-      price: card.price,
-      promo_price: card.promo_price,
-      available: detail.stock,
-      options: {
-        "axis-size": `opt-${size.toLowerCase()}`,
-        "axis-color": `opt-${color.value}`,
-      },
-      label_fr: `${size} / ${color.fr}`,
-      label_ar: `${size} / ${color.ar}`,
-    })),
-  );
-  const specs: Spec[] = [
-    {
-      name_fr: "Matière",
-      name_ar: "الخامة",
-      value_fr: detail.material.fr,
-      value_ar: detail.material.ar,
-    },
-    {
-      name_fr: "Entretien",
-      name_ar: "العناية",
-      value_fr: detail.care.fr,
-      value_ar: detail.care.ar,
-    },
-  ];
+      options: detail.sizes.map((size) => ({
+        id: `opt-${size.toLowerCase()}`,
+        value: size,
+        label_fr: size,
+        label_ar: size,
+        color_hex: null,
+      })),
+    });
+  }
+  axes.push({
+    id: "axis-color",
+    name_fr: "Couleur",
+    name_ar: "اللون",
+    type: "color",
+    options: colorOptions,
+  });
+
+  const variants: PublicVariant[] = detail.sizes?.length
+    ? detail.sizes.flatMap((size) =>
+        detail.colors.map((color) => ({
+          id: `var-${card.id}-${size.toLowerCase()}-${color.value}`,
+          sku: `${card.slug.toUpperCase()}-${size}-${color.value.toUpperCase()}`,
+          price: card.price,
+          promo_price: card.promo_price,
+          available: detail.stock,
+          options: {
+            "axis-size": `opt-${size.toLowerCase()}`,
+            "axis-color": `opt-${color.value}`,
+          },
+          label_fr: `${size} / ${color.fr}`,
+          label_ar: `${size} / ${color.ar}`,
+        })),
+      )
+    : detail.colors.map((color) => ({
+        id: `var-${card.id}-${color.value}`,
+        sku: `${card.slug.toUpperCase()}-${color.value.toUpperCase()}`,
+        price: card.price,
+        promo_price: card.promo_price,
+        available: detail.stock,
+        options: { "axis-color": `opt-${color.value}` },
+        label_fr: color.fr,
+        label_ar: color.ar,
+      }));
+  const specs: Spec[] = [...detail.specs];
 
   return {
     product: {
@@ -587,13 +924,13 @@ function getMockProductDetail(slug: string): {
       name_ar: card.name_ar,
       slug: card.slug,
       sku: card.slug.toUpperCase(),
-      description_fr: `${card.name_fr}, une pièce Maison Noura aux matières choisies et à la coupe juste. Livraison partout en Tunisie, paiement à la livraison.`,
+      description_fr: `${card.name_fr}, sélectionné par Maison Noura. Livraison partout en Tunisie, paiement à la livraison.`,
       description_ar: card.name_ar
-        ? `${card.name_ar} من Maison Noura بخامة مختارة وقصة متقنة. توصيل إلى جميع أنحاء تونس والدفع عند الاستلام.`
+        ? `${card.name_ar} من Maison Noura. توصيل إلى جميع أنحاء تونس والدفع عند الاستلام.`
         : null,
       brand: card.brand,
       model: null,
-      warranty: null,
+      warranty: detail.warranty ?? null,
       price: card.price,
       promo_price: card.promo_price,
       rating_avg: card.rating_avg,
@@ -633,15 +970,15 @@ export const getProductBySlug = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const sb = publicClient();
-    const clothingCategories = await getClothingCategories(sb);
-    const clothingCategoryIds = clothingCategories.map((c) => c.id);
-    if (!clothingCategoryIds.length) return getMockProductDetail(data.slug);
+    const activeCategories = await getActiveCategories(sb);
+    const activeCategoryIds = activeCategories.map((c) => c.id);
+    if (!activeCategoryIds.length) return getMockProductDetail(data.slug);
     const { data: p, error } = await sb
       .from("products")
       .select(
         "id, category_id, name_fr, name_ar, slug, sku, description_fr, description_ar, brand, model, price, promo_price, warranty, has_variants, rating_avg, rating_count, published_at, product_images(id, url, alt, position)",
       )
-      .in("category_id", clothingCategoryIds)
+      .in("category_id", activeCategoryIds)
       .eq("slug", data.slug)
       .eq("status", "published")
       .maybeSingle();
@@ -784,7 +1121,7 @@ export const getProductBySlug = createServerFn({ method: "GET" })
     const related = await loadCards(
       sb,
       (relatedRes.data ?? []).map((r) => r.id),
-      clothingCategoryIds,
+      activeCategoryIds,
     );
     const images = [...(p.product_images ?? [])].sort((a, b) => a.position - b.position);
     return {

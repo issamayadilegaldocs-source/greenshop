@@ -7,13 +7,17 @@ import { pickLocale, useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/categories")({
   head: () => ({
     meta: [
-      { title: "Collections — Maison Noura" },
+      { title: "Catégories — Maison Noura" },
       {
         name: "description",
-        content: "Parcourez les collections de vêtements Maison Noura.",
+        content:
+          "Parcourez toutes les catégories Maison Noura : mode, audio, électroménager et maison.",
       },
-      { property: "og:title", content: "Collections — Maison Noura" },
-      { property: "og:description", content: "Toutes les collections de vêtements Maison Noura." },
+      { property: "og:title", content: "Catégories — Maison Noura" },
+      {
+        property: "og:description",
+        content: "Mode, audio, électroménager et maison chez Maison Noura.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

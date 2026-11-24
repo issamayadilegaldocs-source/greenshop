@@ -26,19 +26,6 @@ export type PublicCategory = {
   display_order: number;
 };
 
-export const CLOTHING_CATEGORY_SLUGS = [
-  "femme",
-  "robes",
-  "chemises-femme",
-  "vestes-femme",
-  "homme",
-  "chemises-homme",
-  "vestes-homme",
-  "essentiels",
-  "t-shirts-sweats",
-] as const;
-const clothingCategorySlugs = new Set<string>(CLOTHING_CATEGORY_SLUGS);
-
 export const MOCK_CATEGORIES: PublicCategory[] = [
   {
     id: "cat-femme",
@@ -70,10 +57,46 @@ export const MOCK_CATEGORIES: PublicCategory[] = [
     name_ar: "الأساسيات",
     slug: "essentiels",
     description_fr:
-      "Les pièces indispensables du vestiaire, choisies pour leur confort et leur tenue.",
-    description_ar: "قطع لا غنى عنها في خزانة الملابس، مختارة لراحتها وجودتها.",
+      "Les pièces indispensables du quotidien, choisies pour leur confort et leur tenue.",
+    description_ar: "قطع لا غنى عنها لكل يوم، مختارة لراحتها وجودتها.",
     image_url: "/demo/tshirt-coton-bio.jpg",
     display_order: 3,
+  },
+  {
+    id: "cat-audio-son",
+    parent_id: null,
+    name_fr: "Audio & Son",
+    name_ar: "الصوت والسماعات",
+    slug: "audio-son",
+    description_fr:
+      "Casques sans fil, écouteurs et enceintes nomades au son pur et au design épuré.",
+    description_ar: "سماعات رأس وأذن ومكبرات صوت لاسلكية بصوت نقي وتصميم أنيق.",
+    image_url: "/demo/casque-audio.jpg",
+    display_order: 4,
+  },
+  {
+    id: "cat-electromenager",
+    parent_id: null,
+    name_fr: "Électroménager",
+    name_ar: "الأجهزة المنزلية",
+    slug: "electromenager",
+    description_fr:
+      "Petit électroménager de cuisine et café, pensé pour allier performance et esthétique.",
+    description_ar: "أجهزة مطبخ وقهوة صغيرة تجمع بين الأداء العالي والتصميم الهادئ.",
+    image_url: "/demo/machine-espresso.jpg",
+    display_order: 5,
+  },
+  {
+    id: "cat-maison-deco",
+    parent_id: null,
+    name_fr: "Maison & Déco",
+    name_ar: "المنزل والديكور",
+    slug: "maison-deco",
+    description_fr:
+      "Luminaires sans fil et arts de la table aux teintes douces pour un intérieur apaisant.",
+    description_ar: "إضاءة لاسلكية وأدوات مائدة بألوان هادئة لمنزل مريح وأنيق.",
+    image_url: "/demo/lampe-table.jpg",
+    display_order: 6,
   },
   {
     id: "cat-robes",
@@ -141,6 +164,72 @@ export const MOCK_CATEGORIES: PublicCategory[] = [
     image_url: "/demo/tshirt-coton-bio.jpg",
     display_order: 1,
   },
+  {
+    id: "cat-casques-ecouteurs",
+    parent_id: "cat-audio-son",
+    name_fr: "Casques & Écouteurs",
+    name_ar: "سماعات الرأس والأذن",
+    slug: "casques-ecouteurs",
+    description_fr: "Réduction de bruit active, confort longue durée et autonomie étendue.",
+    description_ar: "عزل نشط للضوضاء وراحة طوال اليوم وبطارية تدوم طويلاً.",
+    image_url: "/demo/casque-audio.jpg",
+    display_order: 1,
+  },
+  {
+    id: "cat-enceintes-sans-fil",
+    parent_id: "cat-audio-son",
+    name_fr: "Enceintes sans fil",
+    name_ar: "مكبرات صوت لاسلكية",
+    slug: "enceintes-sans-fil",
+    description_fr: "Enceintes compactes en tissu acoustique pour la maison et vos déplacements.",
+    description_ar: "مكبرات صوت مدمجة بقماش صوتي أنيق للمنزل والتنقل.",
+    image_url: "/demo/enceinte-bluetooth.jpg",
+    display_order: 2,
+  },
+  {
+    id: "cat-cafe-petit-dejeuner",
+    parent_id: "cat-electromenager",
+    name_fr: "Café & Petit-déjeuner",
+    name_ar: "القهوة والفطور",
+    slug: "cafe-petit-dejeuner",
+    description_fr: "Machines espresso compactes et bouilloires de précision pour vos matins.",
+    description_ar: "آلات إسبريسو مدمجة وغلايات دقيقة لصباح مثالي.",
+    image_url: "/demo/machine-espresso.jpg",
+    display_order: 1,
+  },
+  {
+    id: "cat-cuisine-preparation",
+    parent_id: "cat-electromenager",
+    name_fr: "Cuisine & Préparation",
+    name_ar: "المطبخ والتحضير",
+    slug: "cuisine-preparation",
+    description_fr: "Appareils malins et cuisson saine au quotidien.",
+    description_ar: "أجهزة ذكية لطهي صحي وسريع كل يوم.",
+    image_url: "/demo/air-fryer.jpg",
+    display_order: 2,
+  },
+  {
+    id: "cat-luminaire-ambiance",
+    parent_id: "cat-maison-deco",
+    name_fr: "Luminaire & Ambiance",
+    name_ar: "الإضاءة والأجواء",
+    slug: "luminaire-ambiance",
+    description_fr: "Lampes rechargeables à lumière chaude pour le salon ou la table de chevet.",
+    description_ar: "مصابيح قابلة للشحن بإضاءة دافئة لغرفة الجلوس أو النوم.",
+    image_url: "/demo/lampe-table.jpg",
+    display_order: 1,
+  },
+  {
+    id: "cat-arts-de-la-table",
+    parent_id: "cat-maison-deco",
+    name_fr: "Arts de la table",
+    name_ar: "أدوات المائدة",
+    slug: "arts-de-la-table",
+    description_fr: "Céramiques et grès émaillés façonnés dans des teintes naturelles.",
+    description_ar: "أكواب وخزف بألوان طبيعية وملمس أنيق.",
+    image_url: "/demo/mugs-ceramique.jpg",
+    display_order: 2,
+  },
 ];
 
 export const getPublicCategories = createServerFn({ method: "GET" }).handler(
@@ -160,18 +249,11 @@ export const getPublicCategories = createServerFn({ method: "GET" }).handler(
       }
       throw new Error(error.message);
     }
-    // hide children whose parent is inactive (not returned)
-    const clothing = (data ?? []).filter((c) => clothingCategorySlugs.has(c.slug));
-    const ids = new Set(clothing.map((c) => c.id));
-    const active = clothing.filter((c) => !c.parent_id || ids.has(c.parent_id));
-
-    // Merge database categories with enriched catalog categories
-    const existingSlugs = new Set(active.map((c) => c.slug));
-    const missing = MOCK_CATEGORIES.filter((m) => !existingSlugs.has(m.slug));
-    const merged = [...active, ...missing].sort(
-      (a, b) => a.display_order - b.display_order || a.name_fr.localeCompare(b.name_fr),
-    );
-    return merged.length > 0 ? merged : MOCK_CATEGORIES;
+    const rows = data ?? [];
+    if (rows.length === 0) return MOCK_CATEGORIES;
+    // Hide children whose parent is inactive (not returned)
+    const ids = new Set(rows.map((c) => c.id));
+    return rows.filter((c) => !c.parent_id || ids.has(c.parent_id));
   },
 );
 

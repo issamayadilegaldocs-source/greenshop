@@ -13,17 +13,17 @@ import heroImage from "@/assets/hero-flatlay.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Maison Noura — Le vestiaire tunisien" },
+      { title: "Maison Noura — Mode, Audio, Électroménager & Maison" },
       {
         name: "description",
         content:
-          "Des vêtements en coton et en lin, pensés en Tunisie et livrés partout avec paiement à la réception.",
+          "Mode, audio, petit électroménager et objets pour la maison, livrés partout en Tunisie avec paiement à la réception.",
       },
-      { property: "og:title", content: "Maison Noura — Le vestiaire tunisien" },
+      { property: "og:title", content: "Maison Noura — Mode, Audio, Électroménager & Maison" },
       {
         property: "og:description",
         content:
-          "Découvrez une collection de vêtements en coton et en lin, avec livraison partout en Tunisie.",
+          "Découvrez nos sélections mode, audio, électroménager et déco, avec livraison partout en Tunisie.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -146,10 +146,10 @@ function Index() {
           {[
             {
               icon: Ruler,
-              title: tr("Choisissez votre taille", "اختر مقاسك"),
+              title: tr("Choisissez vos options", "اختر المواصفات"),
               text: tr(
-                "Comparez les coupes et les variantes disponibles.",
-                "اختر القصة واللون والمقاس المناسب.",
+                "Comparez les couleurs, tailles et caractéristiques disponibles.",
+                "قارن الألوان والمقاسات والمواصفات المتوفرة.",
               ),
             },
             {

@@ -7,6 +7,7 @@ import {
   FolderTree,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Menu,
   MessageSquareText,
   Package,
@@ -33,6 +34,7 @@ type NavItem = {
     | "/admin/products"
     | "/admin/inventory"
     | "/admin/ai-writer"
+    | "/admin/social-studio"
     | "/admin/settings"
     | "/admin/orders"
     | "/admin/customers"
@@ -68,6 +70,12 @@ const NAV: { group: [string, string]; items: NavItem[] }[] = [
         icon: Sparkles,
         fr: "Rédaction IA",
         ar: "التحرير بالذكاء الاصطناعي",
+      },
+      {
+        to: "/admin/social-studio",
+        icon: Megaphone,
+        fr: "Studio Social & Vidéo IA",
+        ar: "استوديو الفيديو والإعلانات IA",
       },
     ],
   },
