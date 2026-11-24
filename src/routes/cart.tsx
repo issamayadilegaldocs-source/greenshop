@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
@@ -35,6 +35,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StoreLayout } from "@/components/store/StoreLayout";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import {
   checkPromoCode,
   createStoreOrder,
@@ -71,6 +73,8 @@ export const Route = createFileRoute("/cart")({
 
 function CartPage() {
   const { tr, locale } = useI18n();
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const cart = useCart();
   const fetchLines = useServerFn(getCartLines);
   const ids = cart.items.map((i) => i.variantId);
@@ -104,6 +108,36 @@ function CartPage() {
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+
+  // Pre-fill checkout fields from the signed-in client's profile & default address
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    void Promise.all([
+      supabase.from("profiles").select("full_name, phone").eq("id", user.id).maybeSingle(),
+      supabase
+        .from("addresses")
+        .select("full_name, phone, city, address_line, instructions")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]).then(([profRes, addrRes]) => {
+      if (!active) return;
+      const prof = profRes.data;
+      const addr = addrRes.data;
+      setCheckoutForm((prev) => ({
+        name: prev.name || addr?.full_name || prof?.full_name || "",
+        phone: prev.phone || addr?.phone || prof?.phone || "",
+        city: addr?.city || prev.city,
+        address: prev.address || addr?.address_line || "",
+        notes: prev.notes || addr?.instructions || "",
+      }));
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   // keep each line's quantity within what's in stock
   useEffect(() => {
@@ -205,7 +239,7 @@ function CartPage() {
           city: checkoutForm.city,
           address: checkoutForm.address,
           instructions: checkoutForm.notes,
-          email: "",
+          email: user?.email ?? "",
           items: cart.items.map((item) => ({
             variantId: item.variantId,
             quantity: item.qty,
@@ -217,6 +251,7 @@ function CartPage() {
       setOrderTotal(order.total);
       setIsCheckoutOpen(false);
       cart.clear();
+      void qc.invalidateQueries({ queryKey: ["my-orders"] });
       toast.success(
         tr(
           `Commande ${order.reference} enregistrée avec succès !`,
@@ -297,12 +332,19 @@ function CartPage() {
             </div>
           </div>
           <div className="flex w-full flex-col gap-2 pt-2">
-            <Button asChild size="lg" className="w-full">
-              <Link to="/track-order">{tr("Suivre ma commande", "تتبع طلبي")}</Link>
+            {user && (
+              <Button asChild size="lg" className="w-full">
+                <Link to="/my-orders">{tr("Voir mes commandes", "عرض طلباتي")}</Link>
+              </Button>
+            )}
+            <Button asChild size="lg" variant={user ? "outline" : "default"} className="w-full">
+              <Link to="/track-order" search={{ ref: orderRef, phone: checkoutForm.phone }}>
+                {tr("Suivre cette commande", "تتبع هذا الطلب")}
+              </Link>
             </Button>
             <Button
               size="lg"
-              variant="outline"
+              variant="ghost"
               className="w-full"
               asChild
               onClick={() => {

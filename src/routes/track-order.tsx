@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { z } from "zod";
 import { Loader2, PackageSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,13 +16,20 @@ import { formatDate, formatTND, dbErrorMessage } from "@/lib/format";
 import { trackStoreOrder, type TrackedOrder } from "@/lib/shop.functions";
 import type { OrderStatus, PaymentStatus } from "@/lib/orders";
 
+const trackSearchSchema = z.object({
+  ref: z.string().max(40).optional().catch(undefined),
+  phone: z.string().max(40).optional().catch(undefined),
+});
+
 export const Route = createFileRoute("/track-order")({
+  validateSearch: (s) => trackSearchSchema.parse(s),
   head: () => ({
     meta: [
       { title: "Suivre ma commande — Maison Noura" },
       {
         name: "description",
-        content: "Suivez l'état de votre commande Maison Noura avec la référence et votre téléphone.",
+        content:
+          "Suivez l'état de votre commande Maison Noura avec la référence et votre téléphone.",
       },
       { property: "og:title", content: "Suivre ma commande — Maison Noura" },
       { property: "og:type", content: "website" },
@@ -33,20 +41,20 @@ export const Route = createFileRoute("/track-order")({
 
 function TrackOrderPage() {
   const { t, tr, locale } = useI18n();
-  const [reference, setReference] = useState("");
-  const [phone, setPhone] = useState("");
+  const search = Route.useSearch();
+  const [reference, setReference] = useState(search.ref?.toUpperCase() ?? "");
+  const [phone, setPhone] = useState(search.phone ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<TrackedOrder | null>(null);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function lookupOrder(refVal: string, phoneVal: string) {
     setBusy(true);
     setError(null);
     setOrder(null);
     try {
       const result = await trackStoreOrder({
-        data: { reference: reference.trim(), phone: phone.trim() },
+        data: { reference: refVal.trim(), phone: phoneVal.trim() },
       });
       if (!result) {
         setError(t("track.notFound"));
@@ -58,6 +66,20 @@ function TrackOrderPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  useEffect(() => {
+    if (search.ref && search.phone) {
+      setReference(search.ref.toUpperCase());
+      setPhone(search.phone);
+      void lookupOrder(search.ref, search.phone);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.ref, search.phone]);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    await lookupOrder(reference, phone);
   }
 
   return (
@@ -161,15 +183,9 @@ function TrackOrderPage() {
             <div className="space-y-1 text-sm">
               <Row k={tr("Sous-total", "المجموع الفرعي")} v={formatTND(order.subtotal, locale)} />
               {order.discount_total > 0 && (
-                <Row
-                  k={tr("Remise", "الخصم")}
-                  v={`−${formatTND(order.discount_total, locale)}`}
-                />
+                <Row k={tr("Remise", "الخصم")} v={`−${formatTND(order.discount_total, locale)}`} />
               )}
-              <Row
-                k={tr("Livraison", "التوصيل")}
-                v={formatTND(order.delivery_fee, locale)}
-              />
+              <Row k={tr("Livraison", "التوصيل")} v={formatTND(order.delivery_fee, locale)} />
               <Row k={tr("Total", "المجموع")} v={formatTND(order.total, locale)} bold />
             </div>
           </div>

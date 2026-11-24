@@ -38,6 +38,16 @@ export const Route = createFileRoute("/_authenticated/my-orders")({
   component: MyOrdersPage,
 });
 
+type OrderItemRow = {
+  id: string;
+  product_name: string;
+  variant_label: string | null;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  image_url: string | null;
+};
+
 type OrderRow = {
   id: string;
   reference: string;
@@ -46,6 +56,9 @@ type OrderRow = {
   total: number;
   created_at: string;
   city: string;
+  phone: string;
+  address: string;
+  order_items: OrderItemRow[];
 };
 
 function MyOrdersPage() {
@@ -61,11 +74,13 @@ function MyOrdersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, reference, status, payment_status, total, created_at, city")
+        .select(
+          "id, reference, status, payment_status, total, created_at, city, phone, address, order_items(id, product_name, variant_label, quantity, unit_price, line_total, image_url)",
+        )
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as OrderRow[];
+      return (data ?? []) as unknown as OrderRow[];
     },
   });
 
@@ -153,13 +168,41 @@ function MyOrdersPage() {
                         </Button>
                       )}
                       <Button asChild size="sm" variant="ghost">
-                        <Link to="/track-order">
+                        <Link to="/track-order" search={{ ref: o.reference, phone: o.phone }}>
                           {tr("Détails", "التفاصيل")} <ChevronRight className="h-4 w-4" />
                         </Link>
                       </Button>
                     </div>
                   </div>
                 </div>
+                {o.order_items?.length > 0 && (
+                  <ul className="mt-3 divide-y rounded-xl border bg-muted/20">
+                    {o.order_items.map((item) => (
+                      <li key={item.id} className="flex items-center gap-3 px-3 py-2 text-xs">
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt=""
+                            className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                            —
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{item.product_name}</p>
+                          <p className="text-muted-foreground">
+                            {item.variant_label ? `${item.variant_label} · ` : ""}×{item.quantity}
+                          </p>
+                        </div>
+                        <span className="shrink-0 font-medium">
+                          {formatTND(item.line_total, locale)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>

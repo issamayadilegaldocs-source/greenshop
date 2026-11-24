@@ -1,4 +1,5 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { queryOptions } from "@tanstack/react-query";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -13,6 +14,24 @@ const publicClient = createServerOnlyFn(() => {
   return createClient<Database>(supabaseUrl(), key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     global: { fetch: createSupabaseFetch(key) },
+  });
+});
+
+/**
+ * Optional-auth server client: forwards the signed-in user's Bearer JWT when present
+ * (attached automatically by auth-attacher.ts), or falls back to anonymous for guests.
+ */
+const optionalAuthClient = createServerOnlyFn(() => {
+  const key = supabasePublishableKey();
+  const authHeader = getRequest()?.headers?.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  const hasValidJwt = token.split(".").length === 3;
+  return createClient<Database>(supabaseUrl(), key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: createSupabaseFetch(key),
+      ...(hasValidJwt ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+    },
   });
 });
 
@@ -1317,7 +1336,8 @@ const createOrderResult = z.object({
 export const createStoreOrder = createServerFn({ method: "POST" })
   .inputValidator((input: z.input<typeof createOrderInput>) => createOrderInput.parse(input))
   .handler(async ({ data }) => {
-    const { data: result, error } = await publicClient().rpc("create_order", {
+    const sb = optionalAuthClient();
+    const { data: result, error } = await sb.rpc("create_order", {
       _customer_name: data.customerName,
       _phone: data.phone,
       _city: data.city,
