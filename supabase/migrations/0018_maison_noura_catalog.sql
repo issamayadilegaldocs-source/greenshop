@@ -277,6 +277,7 @@ declare
   v_variant_id uuid;
   v_sku text;
   v_default boolean;
+  v_position int;
 begin
   for p in
     select * from (values
@@ -289,6 +290,7 @@ begin
     v_size_attribute := md5('att-' || p.root_slug || '-taille')::uuid;
     v_color_attribute := md5('att-' || p.root_slug || '-couleur')::uuid;
     v_default := true;
+    v_position := 1;
 
     foreach v_size in array p.sizes loop
       select id into v_size_option
@@ -307,8 +309,7 @@ begin
           id, product_id, sku, price, promo_price, is_active, is_default, position
         )
         select
-          v_variant_id, product_id, v_sku, price, promo_price, true, v_default,
-          row_number() over (order by v_size, v_color)::int
+          v_variant_id, id, v_sku, price, promo_price, true, v_default, v_position
         from public.products
         where slug = p.slug;
 
@@ -322,6 +323,7 @@ begin
           'Stock initial — Maison Noura', null, null, null
         );
         v_default := false;
+        v_position := v_position + 1;
       end loop;
     end loop;
   end loop;

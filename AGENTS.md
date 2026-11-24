@@ -1,6 +1,6 @@
 # Project rules (weshop)
 
-- The Supabase project is user-managed (project ref `cgqgnikyssngowkhlqof`). The schema lives in
+- The Supabase project is user-managed (project ref `msjlwxjsmijwnyywhknf`). The schema lives in
   `supabase/migrations/*.sql`; apply it with `npm run db:push` (Supabase CLI) or paste
   `supabase/bootstrap.sql` into the Supabase SQL editor. Never edit migrations that were already
   applied — add a new numbered file instead. Why: the database must be reproducible from git.
