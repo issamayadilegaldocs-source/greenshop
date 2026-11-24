@@ -160,8 +160,8 @@ function buildSmartFallback(input: SocialCampaignInput): SocialCampaignResult {
     ad_copy: {
       primary_text: `${hook}\n\n${mainBenefit}. ${secondBenefit}.${offerNote ? ` ${offerNote}.` : ""}\n\n${priceLine} — Livraison rapide dans toute la Tunisie et paiement à la livraison.`,
       headline: pct
-        ? `${input.productName.slice(0, 28)} (-${pct}%)`
-        : `${input.productName.slice(0, 34)}`,
+        ? `${input.productName.slice(0, 28).trim()} (-${pct}%)`
+        : `${input.productName.slice(0, 34).trim()}`,
       description: "Livraison 24 gouvernorats · Paiement à la livraison",
     },
     video_script: {

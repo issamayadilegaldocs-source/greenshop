@@ -1082,6 +1082,8 @@ export const getProductBySlug = createServerFn({ method: "GET" })
       (x, y) => y.depth - x.depth || x.display_order - y.display_order,
     )) {
       if (a.is_variant) continue;
+      // Avoid duplicating "Garantie" when products.warranty is already rendered on the product page
+      if (p.warranty && a.code.toLowerCase() === "garantie") continue;
       const vals = (valuesRes.data ?? []).filter((v) => v.attribute_id === a.id);
       if (!vals.length) continue;
       const fmt = (ar: boolean) =>
@@ -1140,11 +1142,22 @@ export const getProductBySlug = createServerFn({ method: "GET" })
       })
       .filter((a) => a.options.length > 0);
 
-    const related = await loadCards(
-      sb,
-      (relatedRes.data ?? []).map((r) => r.id),
-      activeCategoryIds,
-    );
+    const relatedIds = (relatedRes.data ?? []).map((r) => r.id);
+    if (relatedIds.length < 4) {
+      const { data: extraRelated } = await sb
+        .from("products")
+        .select("id")
+        .eq("status", "published")
+        .neq("id", p.id)
+        .order("is_featured", { ascending: false })
+        .order("published_at", { ascending: false })
+        .limit(8);
+      for (const r of extraRelated ?? []) {
+        if (relatedIds.length >= 4) break;
+        if (!relatedIds.includes(r.id)) relatedIds.push(r.id);
+      }
+    }
+    const related = await loadCards(sb, relatedIds, activeCategoryIds);
     const images = [...(p.product_images ?? [])].sort((a, b) => a.position - b.position);
     return {
       product: {

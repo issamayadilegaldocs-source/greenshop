@@ -18,7 +18,11 @@ import type { OrderStatus, PaymentStatus } from "@/lib/orders";
 
 const trackSearchSchema = z.object({
   ref: z.string().max(40).optional().catch(undefined),
-  phone: z.string().max(40).optional().catch(undefined),
+  phone: z
+    .union([z.string(), z.number()])
+    .transform((v) => String(v).replace(/^"|"$/g, "").slice(0, 40))
+    .optional()
+    .catch(undefined),
 });
 
 export const Route = createFileRoute("/track-order")({

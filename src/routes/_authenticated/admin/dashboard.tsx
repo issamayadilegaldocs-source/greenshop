@@ -19,10 +19,12 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { EmptyState, ErrorState, PageHeader } from "@/components/admin/AdminShell";
+import { OrderStatusBadge } from "@/components/store/OrderStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { formatTND } from "@/lib/format";
+import type { OrderStatus } from "@/lib/orders";
 
 export const Route = createFileRoute("/_authenticated/admin/dashboard")({
   head: () => ({
@@ -186,7 +188,7 @@ function DashboardPage() {
               icon={Truck}
               label={tr("Ventes livrées", "مبيعات مسلّمة")}
               value={formatTND(deliveredSales, locale)}
-              hint={`${delivered.length} ${tr("commandes", "طلبات")}`}
+              hint={`${delivered.length} ${tr(delivered.length > 1 ? "commandes" : "commande", "طلبات")}`}
               tone="success"
             />
             <Stat
@@ -284,7 +286,7 @@ function DashboardPage() {
                         <p className="font-medium text-primary">{o.reference}</p>
                         <p className="truncate text-xs text-muted-foreground">{o.customer_name}</p>
                       </div>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{o.status}</span>
+                      <OrderStatusBadge status={o.status as OrderStatus} />
                       <span className="font-medium">{formatTND(o.total, locale)}</span>
                     </Link>
                   </li>

@@ -52,12 +52,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const roles = rolesQuery.data ?? [];
+  const authLoading = loading || (Boolean(userId) && rolesQuery.isPending);
   return (
     <AuthContext.Provider
       value={{
         session,
         user: session?.user ?? null,
-        loading,
+        loading: authLoading,
         roles,
         isAdmin: roles.includes("admin"),
         isStaff: roles.includes("admin") || roles.includes("staff"),
