@@ -1,0 +1,13 @@
+# Normalize text files to LF in the repository; working trees may use native
+# line endings (core.autocrlf) — prettier is configured with endOfLine: "auto".
+* text=auto
+
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.gif binary
+*.woff binary
+*.woff2 binary
