@@ -12,10 +12,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/admin/finances")({
   head: () => ({
-    meta: [
-      { title: "Finances — Maison Noura" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Finances — Maison Noura" }, { name: "robots", content: "noindex" }],
   }),
   component: AdminFinancesPage,
 });
@@ -32,7 +29,7 @@ type Entry = {
   orders: { reference: string } | null;
 };
 
-const ENTRY_LABELS: Record<EntryType, [string, string]> = {
+const ENTRY_LABELS: Record<string, [string, string]> = {
   revenue: ["Chiffre d'affaires", "رقم المعاملات"],
   cogs: ["Coût des marchandises", "تكلفة البضاعة"],
   discount: ["Remises", "الخصومات"],
@@ -43,6 +40,9 @@ const ENTRY_LABELS: Record<EntryType, [string, string]> = {
   return_cogs_reversal: ["Reversement COGS (retour)", "عكس التكلفة (إرجاع)"],
   return_loss: ["Perte sur retour", "خسارة إرجاع"],
   damage_loss: ["Perte dommages", "خسارة تلف"],
+  commission: ["Commission plateforme", "عمولة المنصة"],
+  commission_reversal: ["Reversement commission", "عكس العمولة"],
+  seller_settlement: ["Règlement vendeur", "تسوية البائع"],
 };
 
 function AdminFinancesPage() {
@@ -90,9 +90,7 @@ function AdminFinancesPage() {
     const delivery = map.get("delivery_income") ?? 0;
     const cash = map.get("cash_collected") ?? 0;
     const losses =
-      (map.get("return_loss") ?? 0) +
-      (map.get("damage_loss") ?? 0) +
-      (map.get("refund") ?? 0);
+      (map.get("return_loss") ?? 0) + (map.get("damage_loss") ?? 0) + (map.get("refund") ?? 0);
     const gross = revenue + delivery - discount - cogs - losses;
     return { map, revenue, cogs, discount, delivery, cash, losses, gross };
   }, [entries.data]);
@@ -210,11 +208,12 @@ function AdminFinancesPage() {
                     <tr key={e.id} className="border-b last:border-0">
                       <td className="px-4 py-3">
                         <p className="font-medium">
-                          {tr(ENTRY_LABELS[e.entry_type][0], ENTRY_LABELS[e.entry_type][1])}
+                          {tr(
+                            ENTRY_LABELS[e.entry_type]?.[0] ?? e.entry_type,
+                            ENTRY_LABELS[e.entry_type]?.[1] ?? e.entry_type,
+                          )}
                         </p>
-                        {e.note && (
-                          <p className="text-xs text-muted-foreground">{e.note}</p>
-                        )}
+                        {e.note && <p className="text-xs text-muted-foreground">{e.note}</p>}
                       </td>
                       <td className="px-4 py-3 text-end font-medium">
                         {formatTND(e.amount, locale)}

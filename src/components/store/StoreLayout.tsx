@@ -108,7 +108,8 @@ function CartButton() {
 
 export function StoreLayout({ children }: { children: ReactNode }) {
   const { t, locale } = useI18n();
-  const { data: categories = [] } = useQuery(publicCategoriesQuery());
+  const categoriesQuery = useQuery(publicCategoriesQuery());
+  const categories = categoriesQuery.data ?? [];
   const { data: settings } = useQuery(storeSettingsQuery());
   const announcement = settings ? pickLocale(settings, "announcement", locale) : "";
 
@@ -121,7 +122,7 @@ export function StoreLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       )}
-      {categories.length === 0 && (
+      {categoriesQuery.isSuccess && categories.length === 0 && (
         <div className="border-b bg-amber-50 px-4 py-2.5 text-center text-xs font-medium text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           ⚠️ <strong>Base de données non initialisée</strong> : Exécutez le script{" "}
           <code className="rounded bg-amber-200/60 px-1.5 py-0.5 font-mono text-[11px] dark:bg-amber-900/60">

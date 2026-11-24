@@ -24,6 +24,7 @@ import { Logo } from "@/components/store/Logo";
 import { LanguageToggle } from "@/components/store/LanguageToggle";
 import { useSignOut } from "@/components/store/AccountMenu";
 import { useAuth } from "@/hooks/use-auth";
+import { dbErrorMessage } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -288,9 +289,7 @@ export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () =>
       <p className="font-medium text-destructive">
         {tr("Impossible de charger les données", "تعذر تحميل البيانات")}
       </p>
-      <p className="mt-1 text-muted-foreground">
-        {error instanceof Error ? error.message : String(error)}
-      </p>
+      <p className="mt-1 text-muted-foreground">{dbErrorMessage(error)}</p>
       {onRetry && (
         <Button size="sm" variant="outline" className="mt-3" onClick={onRetry}>
           {tr("Réessayer", "إعادة المحاولة")}

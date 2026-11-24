@@ -256,6 +256,68 @@ function CartPage() {
     );
   }
 
+  if (orderRef) {
+    return (
+      <StoreLayout>
+        <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-16 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success">
+            <CheckCircle2 className="h-9 w-9" />
+          </div>
+          <h1 className="text-2xl font-bold">
+            {tr("Commande confirmée !", "تم تأكيد طلبك بنجاح !")}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {tr(
+              "Merci pour votre confiance. Conservez votre référence pour suivre la livraison.",
+              "شكراً لثقتكم. احتفظوا بالمرجع لمتابعة التوصيل.",
+            )}
+          </p>
+          <div className="w-full space-y-2 rounded-2xl border bg-card p-5 text-start text-sm shadow-card">
+            <div className="flex justify-between border-b pb-2 font-mono">
+              <span className="text-muted-foreground">{tr("Référence", "المرجع")}</span>
+              <span className="font-bold text-primary">{orderRef}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{tr("Destinataire", "المستلم")}</span>
+              <span className="font-medium">{checkoutForm.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{tr("Téléphone", "الهاتف")}</span>
+              <span className="font-medium">{checkoutForm.phone}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">{tr("Ville", "المدينة")}</span>
+              <span className="font-medium">{checkoutForm.city}</span>
+            </div>
+            <div className="flex justify-between border-t pt-2 font-semibold">
+              <span>{tr("Montant à payer au livreur", "المبلغ المستحق للدفع")}</span>
+              <span className="font-bold text-primary">
+                {formatTND(orderTotal ?? finalTotal, locale)}
+              </span>
+            </div>
+          </div>
+          <div className="flex w-full flex-col gap-2 pt-2">
+            <Button asChild size="lg" className="w-full">
+              <Link to="/track-order">{tr("Suivre ma commande", "تتبع طلبي")}</Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full"
+              asChild
+              onClick={() => {
+                setOrderRef(null);
+                setOrderTotal(null);
+              }}
+            >
+              <Link to="/shop">{tr("Continuer mes achats", "مواصلة التسوق")}</Link>
+            </Button>
+          </div>
+        </div>
+      </StoreLayout>
+    );
+  }
+
   if (cart.items.length === 0) {
     return (
       <StoreLayout>
@@ -523,20 +585,35 @@ function CartPage() {
                   <SelectValue placeholder="Sélectionnez votre ville" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[
-                    "Tunis",
-                    "Ariana",
-                    "Ben Arous",
-                    "Manouba",
-                    "Nabeul",
-                    "Sousse",
-                    "Monastir",
-                    "Sfax",
-                    "Bizerte",
-                    "Kairouan",
-                    "Gabès",
-                    "Médenine",
-                  ].map((city) => (
+                  {(settings.data?.delivery_cities?.length
+                    ? settings.data.delivery_cities
+                    : [
+                        "Tunis",
+                        "Ariana",
+                        "Ben Arous",
+                        "Manouba",
+                        "Nabeul",
+                        "Zaghouan",
+                        "Bizerte",
+                        "Béja",
+                        "Jendouba",
+                        "Le Kef",
+                        "Siliana",
+                        "Sousse",
+                        "Monastir",
+                        "Mahdia",
+                        "Sfax",
+                        "Kairouan",
+                        "Kasserine",
+                        "Sidi Bouzid",
+                        "Gabès",
+                        "Médenine",
+                        "Tataouine",
+                        "Gafsa",
+                        "Tozeur",
+                        "Kébili",
+                      ]
+                  ).map((city) => (
                     <SelectItem key={city} value={city}>
                       {city}
                     </SelectItem>
@@ -582,65 +659,7 @@ function CartPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Succès Commande */}
-      <Dialog
-        open={orderRef !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setOrderRef(null);
-            setOrderTotal(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-md text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success/15 text-success">
-            <CheckCircle2 className="h-8 w-8" />
-          </div>
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold">
-              {tr("Commande confirmée !", "تم تأكيد طلبك بنجاح !")}
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              {tr(
-                "Merci pour votre confiance. Votre colis est en cours de préparation.",
-                "شكراً لثقتكم. طلبكم قيد التحضير حالياً.",
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="rounded-2xl border bg-card p-4 text-start text-sm space-y-2">
-            <div className="flex justify-between border-b pb-2 font-mono">
-              <span className="text-muted-foreground">{tr("Référence", "المرجع")}</span>
-              <span className="font-bold text-primary">{orderRef}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{tr("Destinataire", "المستلم")}</span>
-              <span className="font-medium">{checkoutForm.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{tr("Téléphone", "الهاتف")}</span>
-              <span className="font-medium">{checkoutForm.phone}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{tr("Ville", "المدينة")}</span>
-              <span className="font-medium">{checkoutForm.city}</span>
-            </div>
-            <div className="flex justify-between border-t pt-2 font-semibold">
-              <span>{tr("Montant à payer au livreur", "المبلغ المستحق للدفع")}</span>
-              <span className="text-primary font-bold">
-                {formatTND(orderTotal ?? finalTotal, locale)}
-              </span>
-            </div>
-          </div>
-          <DialogFooter className="flex-col sm:flex-col gap-2">
-            <Button asChild size="lg" className="w-full">
-              <Link to="/track-order">{tr("Suivre ma commande", "تتبع طلبي")}</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="w-full">
-              <Link to="/shop">{tr("Continuer mes achats", "مواصلة التسوق")}</Link>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modal Succès Commande (fallback si panier non vidé) */}
     </StoreLayout>
   );
 }
