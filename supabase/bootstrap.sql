@@ -31,6 +31,7 @@
 --   0016_more_categories.sql
 --   0017_clothing_storefront.sql
 --   0018_maison_noura_catalog.sql
+--   0019_fix_description_newlines.sql
 -- =========================================================
 
 -- ===== 0000_clean_old_supabase =====
@@ -7387,6 +7388,13 @@ values
     'Rédige deux phrases courtes en français, avec le nom du vêtement, sa matière et son usage. Garde un ton éditorial sobre et n’ajoute aucune caractéristique qui ne figure pas dans les données.',
     'short', 2
   );
+
+-- ===== 0019_fix_description_newlines.sql =====
+-- 0018 stored descriptions with literal backslash-n sequences; turn them into real newlines.
+update public.products
+set description_fr = replace(description_fr, '\n', E'\n'),
+    description_ar = replace(description_ar, '\n', E'\n')
+where description_fr like '%\n%' or description_ar like '%\n%';
 
 commit;
 
