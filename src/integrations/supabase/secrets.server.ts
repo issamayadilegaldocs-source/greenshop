@@ -22,3 +22,12 @@ export function aiModel(): string {
   const model = process.env["AI_MODEL"]?.trim();
   return model && model.length > 0 ? model : "gpt-4.1-mini";
 }
+
+/** Optional server-only API keys for real AI generative video (image-to-video MP4). */
+export function falApiKey(): string | undefined {
+  return process.env["FAL_KEY"]?.trim() || undefined;
+}
+
+export function replicateApiToken(): string | undefined {
+  return process.env["REPLICATE_API_TOKEN"]?.trim() || undefined;
+}

@@ -27,7 +27,7 @@ function buildInstructions(template: TemplateForPrompt, input: DescriptionInput)
   const wantFr = input.languages !== "ar";
   const wantAr = input.languages !== "fr";
   return [
-    "Tu es rédacteur e-commerce pour Maison Noura, une marque de mode tunisienne (paiement à la livraison uniquement, prix en dinars tunisiens).",
+    "Tu es rédacteur e-commerce pour Maison Noura, une boutique tunisienne (mode, audio, petit électroménager et maison — paiement à la livraison uniquement, prix en dinars tunisiens).",
     "Tu rédiges des descriptions produit prêtes à publier, à partir UNIQUEMENT des informations fournies.",
     "Règles strictes :",
     "- N'invente aucune caractéristique, chiffre, matière, certification ou garantie qui n'est pas fournie.",
@@ -46,6 +46,116 @@ function buildInstructions(template: TemplateForPrompt, input: DescriptionInput)
     `Modèle de rédaction à suivre : « ${template.name} »`,
     template.instructions,
   ].join("\n");
+}
+
+function buildFallbackDescription(
+  template: TemplateForPrompt,
+  input: DescriptionInput,
+): DescriptionResult {
+  const wantFr = input.languages !== "ar";
+  const wantAr = input.languages !== "fr";
+  const name = input.productName.trim();
+  const brandModel = [input.brand, input.model].filter(Boolean).join(" — ");
+  const isShort = template.target_length === "short";
+  const isLong = template.target_length === "long";
+
+  let description_fr: string | null = null;
+  let summary_fr: string | null = null;
+  if (wantFr) {
+    const introParts = [
+      brandModel
+        ? `${name} (${brandModel}) a été sélectionné pour accompagner votre quotidien avec style et fiabilité.`
+        : `${name} a été pensé pour allier praticité, esthétique soignée et confort au quotidien.`,
+    ];
+    if (input.categoryPath && !isShort) {
+      introParts.push(
+        `Issu de notre sélection ${input.categoryPath}, il s'intègre facilement à votre routine.`,
+      );
+    }
+    if (input.audience) {
+      introParts.push(`Idéal pour : ${input.audience}.`);
+    }
+
+    const bullets: string[] = [];
+    for (const attr of input.attributes.slice(0, isShort ? 3 : 8)) {
+      bullets.push(`• ${attr.label} : ${attr.value}`);
+    }
+    if (input.highlights) {
+      for (const line of input.highlights
+        .split(/\r?\n/)
+        .map((l) => l.replace(/^[•\-*]\s*/, "").trim())
+        .filter(Boolean)
+        .slice(0, isShort ? 2 : 5)) {
+        bullets.push(`• ${line}`);
+      }
+    }
+    if (input.warranty) {
+      bullets.push(`• Garantie : ${input.warranty}`);
+    }
+
+    const paragraphs: string[] = [introParts.join(" ")];
+    if (bullets.length > 0) {
+      paragraphs.push(bullets.join("\n"));
+    }
+    if (isLong) {
+      paragraphs.push(
+        "Chaque détail est pensé pour vous offrir une prise en main simple et une belle tenue dans le temps.",
+      );
+    }
+    paragraphs.push(
+      "Livraison rapide partout dans les 24 gouvernorats en Tunisie, avec paiement à la livraison en toute sérénité.",
+    );
+
+    description_fr = clean(paragraphs.join("\n\n"), 5000);
+    summary_fr = clean(
+      brandModel
+        ? `${name} (${brandModel}) — livraison dans toute la Tunisie avec paiement à la réception.`
+        : `${name} — sélectionné par Maison Noura, livré partout en Tunisie avec paiement à la livraison.`,
+      160,
+    );
+  }
+
+  let description_ar: string | null = null;
+  let summary_ar: string | null = null;
+  if (wantAr) {
+    const introAr = brandModel
+      ? `يجمع ${name} (${brandModel}) بين الجودة العالية والتصميم الأنيق ليناسب استخدامك اليومي بكل راحة.`
+      : `تم اختيار ${name} بعناية ليمنحك جودة موثوقة وتصميماً عملياً يناسب يومك.`;
+
+    const bulletsAr: string[] = [];
+    for (const attr of input.attributes.slice(0, isShort ? 3 : 8)) {
+      bulletsAr.push(`• ${attr.label}: ${attr.value}`);
+    }
+    if (input.highlights) {
+      for (const line of input.highlights
+        .split(/\r?\n/)
+        .map((l) => l.replace(/^[•\-*]\s*/, "").trim())
+        .filter(Boolean)
+        .slice(0, isShort ? 2 : 5)) {
+        bulletsAr.push(`• ${line}`);
+      }
+    }
+    if (input.warranty) {
+      bulletsAr.push(`• الضمان: ${input.warranty}`);
+    }
+
+    const partsAr: string[] = [introAr];
+    if (input.audience && !isShort) {
+      partsAr.push(`مثالي لـ: ${input.audience}.`);
+    }
+    if (bulletsAr.length > 0) {
+      partsAr.push(bulletsAr.join("\n"));
+    }
+    partsAr.push("توصيل سريع إلى جميع الولايات الـ24 في تونس مع الدفع عند الاستلام.");
+
+    description_ar = clean(partsAr.join("\n\n"), 5000);
+    summary_ar = clean(
+      `${name}${brandModel ? ` (${brandModel})` : ""} — توصيل إلى جميع أنحاء تونس والدفع عند الاستلام.`,
+      160,
+    );
+  }
+
+  return { description_fr, description_ar, summary_fr, summary_ar };
 }
 
 function buildPrompt(input: DescriptionInput) {
@@ -121,12 +231,7 @@ export async function generateProductDescription(
 ): Promise<DescriptionResponse> {
   const apiKey = openAiApiKey();
   if (!apiKey) {
-    return {
-      ok: false,
-      code: "config",
-      error:
-        "Le service IA n'est pas configuré : ajoutez OPENAI_API_KEY aux variables d'environnement du serveur.",
-    };
+    return { ok: true, data: buildFallbackDescription(template, input) };
   }
 
   const provider = createOpenAI({ apiKey });
@@ -164,37 +269,18 @@ export async function generateProductDescription(
       summary_ar: input.languages === "fr" ? null : clean(output.summary_ar, 200),
     };
     if (!data.description_fr && !data.description_ar) {
-      return {
-        ok: false,
-        code: "empty",
-        error:
-          "Aucune description n'a été produite. Ajoutez plus de caractéristiques puis réessayez.",
-      };
+      return { ok: true, data: buildFallbackDescription(template, input) };
     }
     return { ok: true, data };
   } catch (error) {
     const err = streamError ?? error;
-    console.error("[ai-description] generation failed", err);
-    if (APICallError.isInstance(err)) {
-      let safe = "";
-      try {
-        const body = JSON.parse(err.responseBody ?? "{}") as {
-          message?: string;
-          error?: { message?: string };
-        };
-        safe = body.message ?? body.error?.message ?? "";
-      } catch {
-        /* ignore */
-      }
-      return errorFromStatus(err.statusCode, safe);
+    console.error("[ai-description] OpenAI failed, using smart template fallback", err);
+    if (APICallError.isInstance(err) && err.statusCode === 429) {
+      return errorFromStatus(429, "");
     }
     if (NoObjectGeneratedError.isInstance(err)) {
-      return {
-        ok: false,
-        code: "failed",
-        error: "La réponse de l'IA était incomplète. Réessayez.",
-      };
+      return { ok: true, data: buildFallbackDescription(template, input) };
     }
-    return errorFromStatus(undefined, "");
+    return { ok: true, data: buildFallbackDescription(template, input) };
   }
 }

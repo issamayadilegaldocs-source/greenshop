@@ -514,6 +514,8 @@ export function SocialMarketingStudio({
               <PromoVideoStudio
                 productName={selectedProduct.name_fr}
                 productSlug={selectedProduct.slug}
+                categoryName={selectedProduct.categories?.name_fr ?? null}
+                description={selectedProduct.description_fr}
                 imageUrl={selectedImage}
                 price={Number(selectedProduct.price)}
                 promoPrice={
