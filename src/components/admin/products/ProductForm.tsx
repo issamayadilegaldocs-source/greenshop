@@ -37,6 +37,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DescriptionGenerator } from "@/components/admin/ai/DescriptionGenerator";
+import { PhotoToProductCard } from "@/components/admin/products/PhotoToProductCard";
+import type { PhotoProductDraft } from "@/lib/ai-photo-product.schema";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { uploadCatalogImage } from "@/lib/storage";
@@ -510,6 +512,50 @@ export function ProductForm({
     [variantAttrs, axisSel],
   );
 
+  function applyPhotoDraft(draft: PhotoProductDraft) {
+    setNameFr(draft.name_fr);
+    setNameAr(draft.name_ar);
+    setSlug(draft.slug);
+    setSlugTouched(true);
+    setSku(draft.sku);
+    if (draft.category_id && categories.some((c) => c.id === draft.category_id)) {
+      onCategory(draft.category_id);
+    }
+    setBrand(draft.brand ?? "");
+    setModel(draft.model ?? "");
+    setWarranty(draft.warranty ?? "");
+    setDescFr(draft.description_fr);
+    setDescAr(draft.description_ar);
+    setVariants((rows) => {
+      const first = rows[0] ?? emptyVariant(draft.sku);
+      const nextFirst: VariantRow = {
+        ...first,
+        sku: first.sku || draft.sku,
+        price: String(draft.suggested_price_tnd),
+        promo_price:
+          draft.suggested_promo_price_tnd != null ? String(draft.suggested_promo_price_tnd) : "",
+        initial_stock:
+          !first.id && (!first.initial_stock || first.initial_stock === "0")
+            ? "10"
+            : first.initial_stock,
+      };
+      return [nextFirst, ...rows.slice(1)];
+    });
+  }
+
+  function addAiImage(img: { url: string; storage_path: string }, prepend = false) {
+    setImages((rows) => {
+      const entry: ImageRow = { key: newKey(), url: img.url, storage_path: img.storage_path };
+      return prepend ? [entry, ...rows] : [...rows, entry];
+    });
+  }
+
+  const categoryChoices = useMemo(
+    () => categories.map((c) => ({ id: c.id, label: catLabel(c.id) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [categories, locale],
+  );
+
   return (
     <form onSubmit={submit} className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -560,6 +606,14 @@ export function ProductForm({
           </ul>
         </div>
       )}
+
+      <PhotoToProductCard
+        categories={categoryChoices}
+        productName={name_fr}
+        existingImageUrl={images[0]?.url ?? null}
+        onApplyDraft={applyPhotoDraft}
+        onAddUploadedImage={addAiImage}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <div className="space-y-6">

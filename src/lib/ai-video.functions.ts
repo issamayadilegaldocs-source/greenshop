@@ -11,6 +11,8 @@ import {
   type AiVideoStartResponse,
 } from "./ai/video.server";
 
+import { resolveAiConfig } from "./ai/config.server";
+
 export const startAiProductVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: AiVideoStartRaw) => aiVideoStartSchema.parse(input))
@@ -24,7 +26,8 @@ export const startAiProductVideo = createServerFn({ method: "POST" })
         error: "Fonction réservée à l'équipe et aux administrateurs.",
       };
     }
-    return startGenerativeVideo(data);
+    const aiConfig = await resolveAiConfig(context.supabase);
+    return startGenerativeVideo(data, aiConfig);
   });
 
 export const pollAiProductVideo = createServerFn({ method: "POST" })
@@ -35,5 +38,6 @@ export const pollAiProductVideo = createServerFn({ method: "POST" })
     if (error || !isStaff) {
       return { ok: false, error: "Accès refusé." };
     }
-    return pollGenerativeVideo(data);
+    const aiConfig = await resolveAiConfig(context.supabase);
+    return pollGenerativeVideo(data, aiConfig);
   });

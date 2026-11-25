@@ -1,6 +1,10 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { APICallError, NoObjectGeneratedError, Output, streamText } from "ai";
-import { aiModel, openAiApiKey } from "@/integrations/supabase/secrets.server";
+import {
+  aiModel as envAiModel,
+  openAiApiKey as envOpenAiApiKey,
+} from "@/integrations/supabase/secrets.server";
+import type { ResolvedAiConfig } from "./config.server";
 import {
   socialCampaignResultSchema,
   type SocialCampaignInput,
@@ -279,8 +283,10 @@ function buildPrompt(input: SocialCampaignInput): string {
 
 export async function generateSocialCampaign(
   input: SocialCampaignInput,
+  config?: ResolvedAiConfig,
 ): Promise<SocialCampaignResponse> {
-  const apiKey = openAiApiKey();
+  const apiKey = config?.openaiApiKey ?? envOpenAiApiKey();
+  const modelName = config?.aiModel ?? envAiModel();
   if (!apiKey) {
     // Graceful instant fallback so the studio & video generator work even before OPENAI_API_KEY is set.
     return { ok: true, source: "smart_template", data: buildSmartFallback(input) };
@@ -291,7 +297,7 @@ export async function generateSocialCampaign(
 
   try {
     const result = streamText({
-      model: provider.responses(aiModel()),
+      model: provider.responses(modelName),
       instructions: buildInstructions(input),
       messages: [{ role: "user", content: buildPrompt(input) }],
       output: Output.object({ schema: socialCampaignResultSchema }),

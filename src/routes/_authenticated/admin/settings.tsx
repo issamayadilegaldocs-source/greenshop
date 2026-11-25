@@ -2,12 +2,26 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
-import { Loader2, Settings, ShieldCheck, Trash2, UserPlus, X } from "lucide-react";
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  UserPlus,
+  X,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -20,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
 import { dbErrorMessage } from "@/lib/format";
+import { getAiSettingsStatus, saveAiSettings, testAiConnection } from "@/lib/ai-settings.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
   head: () => ({
@@ -50,6 +65,7 @@ function SettingsPage() {
         )}
       />
       <StoreSettingsCard readOnly={!isAdmin} />
+      {isAdmin && <AiSettingsCard />}
       {isAdmin && <TeamCard />}
     </div>
   );
@@ -304,6 +320,370 @@ function StoreSettingsCard({ readOnly }: { readOnly: boolean }) {
           </Button>
         </div>
       )}
+    </form>
+  );
+}
+
+function AiSettingsCard() {
+  const { tr } = useI18n();
+  const qc = useQueryClient();
+
+  const q = useQuery({
+    queryKey: ["admin", "ai-settings"],
+    queryFn: () => getAiSettingsStatus(),
+  });
+
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [falKey, setFalKey] = useState("");
+  const [repToken, setRepToken] = useState("");
+  const [aiModel, setAiModel] = useState("gpt-4o-mini");
+  const [imageModel, setImageModel] = useState("gpt-image-1");
+  const [assistantEnabled, setAssistantEnabled] = useState(true);
+  const [showOpenai, setShowOpenai] = useState(false);
+  const [showFal, setShowFal] = useState(false);
+  const [showRep, setShowRep] = useState(false);
+  const [testResult, setTestResult] = useState<
+    { ok: true; text: string } | { ok: false; text: string } | null
+  >(null);
+
+  useEffect(() => {
+    if (!q.data) return;
+    setAiModel(q.data.aiModel || "gpt-4o-mini");
+    setImageModel(q.data.imageModel || "gpt-image-1");
+    setAssistantEnabled(q.data.assistantEnabled);
+  }, [q.data]);
+
+  const save = useMutation({
+    mutationFn: (opts?: { clearOpenai?: boolean; clearFal?: boolean; clearRep?: boolean }) =>
+      saveAiSettings({
+        data: {
+          openaiApiKey: opts?.clearOpenai ? null : openaiKey.trim() || null,
+          clearOpenaiKey: Boolean(opts?.clearOpenai),
+          aiModel,
+          imageModel,
+          falApiKey: opts?.clearFal ? null : falKey.trim() || null,
+          clearFalKey: Boolean(opts?.clearFal),
+          replicateApiToken: opts?.clearRep ? null : repToken.trim() || null,
+          clearReplicateToken: Boolean(opts?.clearRep),
+          assistantEnabled,
+        },
+      }),
+    onSuccess: () => {
+      setOpenaiKey("");
+      setFalKey("");
+      setRepToken("");
+      setTestResult(null);
+      toast.success(tr("Configuration IA enregistrée", "تم حفظ إعدادات الذكاء الاصطناعي"));
+      qc.invalidateQueries({ queryKey: ["admin", "ai-settings"] });
+      qc.invalidateQueries({ queryKey: ["public", "assistant-status"] });
+    },
+    onError: (e) => toast.error(dbErrorMessage(e)),
+  });
+
+  const testConn = useMutation({
+    mutationFn: () =>
+      testAiConnection({
+        data: {
+          candidateKey: openaiKey.trim() || null,
+          candidateModel: aiModel,
+        },
+      }),
+    onSuccess: (res) => {
+      if (res.ok) {
+        const msg = tr(
+          `Connexion OpenAI réussie (${res.model})`,
+          `تم الاتصال بـ OpenAI بنجاح (${res.model})`,
+        );
+        setTestResult({ ok: true, text: msg });
+        toast.success(msg);
+      } else {
+        setTestResult({ ok: false, text: res.error });
+        toast.error(res.error);
+      }
+    },
+    onError: (e) => {
+      const msg = dbErrorMessage(e);
+      setTestResult({ ok: false, text: msg });
+      toast.error(msg);
+    },
+  });
+
+  if (q.error) return <ErrorState error={q.error} onRetry={() => q.refetch()} />;
+  if (q.isLoading) return <Skeleton className="h-72 rounded-2xl" />;
+
+  const status = q.data;
+  const openAiActive = Boolean(status?.hasOpenaiKey || status?.openaiEnvConfigured);
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate({});
+      }}
+      className="rounded-2xl border bg-card shadow-card"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
+        <div>
+          <p className="flex items-center gap-2 font-semibold">
+            <Sparkles className="h-4 w-4 text-primary" />
+            {tr("Configuration IA & Clés API", "إعدادات الذكاء الاصطناعي ومفاتيح API")}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {tr(
+              "Stockées côté serveur uniquement (jamais exposées au navigateur). Alimentent la création par photo, les photos marketing, la rédaction, le studio social et l'assistant shopping.",
+              "تُحفظ على الخادم فقط ولا تُكشف للمتصفح. تشغّل إنشاء المنتجات بالصور، الصور التسويقية، التحرير، استوديو الإعلانات والمساعد الذكي.",
+            )}
+          </p>
+        </div>
+        <Badge variant={openAiActive ? "default" : "secondary"} className="gap-1">
+          {openAiActive ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {status?.hasOpenaiKey
+                ? tr(
+                    `OpenAI active (${status.openaiKeyHint})`,
+                    `OpenAI مفعّل (${status.openaiKeyHint})`,
+                  )
+                : tr("OpenAI active (env serveur)", "OpenAI مفعّل (متغير الخادم)")}
+            </>
+          ) : (
+            tr("Mode local sans clé OpenAI", "وضع محلي بدون مفتاح OpenAI")
+          )}
+        </Badge>
+      </div>
+
+      <div className="grid gap-6 p-5 md:grid-cols-2">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="openai-key" className="flex items-center gap-1.5">
+                <KeyRound className="h-3.5 w-3.5 text-muted-foreground" />
+                {tr("Clé API OpenAI (OPENAI_API_KEY)", "مفتاح OpenAI API")}
+              </Label>
+              {status?.hasOpenaiKey && (
+                <button
+                  type="button"
+                  onClick={() => save.mutate({ clearOpenai: true })}
+                  className="text-xs text-destructive hover:underline"
+                >
+                  {tr("Supprimer la clé enregistrée", "حذف المفتاح المحفوظ")}
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Input
+                id="openai-key"
+                type={showOpenai ? "text" : "password"}
+                dir="ltr"
+                autoComplete="new-password"
+                placeholder={
+                  status?.hasOpenaiKey
+                    ? `${status.openaiKeyHint} (${tr("laisser vide pour conserver", "اتركه فارغاً للإبقاء عليه")})`
+                    : "sk-proj-..."
+                }
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                className="pe-10 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => setShowOpenai((v) => !v)}
+                aria-label={tr("Afficher ou masquer", "إظهار أو إخفاء")}
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showOpenai ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              {tr(
+                "Utilisée pour l'analyse photo produit (Vision), les photos marketing IA, la rédaction FR/AR, le Studio Social et le chat client.",
+                "يُستخدم لتحليل صور المنتجات، إنشاء الصور التسويقية، كتابة الأوصاف ومساعد التسوق.",
+              )}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{tr("Modèle texte & vision", "نموذج النص والرؤية")}</Label>
+              <Select value={aiModel} onValueChange={setAiModel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gpt-4o-mini">
+                    gpt-4o-mini ({tr("Rapide & économique", "سريع واقتصادي")})
+                  </SelectItem>
+                  <SelectItem value="gpt-4.1-mini">
+                    gpt-4.1-mini ({tr("Équilibré", "متوازن")})
+                  </SelectItem>
+                  <SelectItem value="gpt-4o">
+                    gpt-4o ({tr("Vision haute précision", "رؤية عالية الدقة")})
+                  </SelectItem>
+                  <SelectItem value="gpt-4.1">
+                    gpt-4.1 ({tr("Rédaction premium", "تحرير احترافي")})
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{tr("Modèle photos marketing", "نموذج الصور التسويقية")}</Label>
+              <Select value={imageModel} onValueChange={setImageModel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gpt-image-1">
+                    gpt-image-1 ({tr("Recommandé", "موصى به")})
+                  </SelectItem>
+                  <SelectItem value="gpt-image-1-mini">
+                    gpt-image-1-mini ({tr("Rapide", "سريع")})
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-xl border bg-muted/40 px-3.5 py-3">
+            <div className="space-y-0.5 pe-3">
+              <p className="text-sm font-medium">
+                {tr("Assistant Shopping IA sur la boutique", "مساعد التسوق الذكي في المتجر")}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {tr(
+                  "Bulle de chat bilingue FR/AR connectée au catalogue réel et au suivi de commandes.",
+                  "محادثة ثنائية اللغة مرتبطة بالكتالوج الحقيقي وتتبع الطلبات.",
+                )}
+              </p>
+            </div>
+            <Switch checked={assistantEnabled} onCheckedChange={setAssistantEnabled} />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="fal-key">
+                {tr("Clé fal.ai (FAL_KEY — Vidéo Kling 2.1)", "مفتاح fal.ai للفيديو")}
+              </Label>
+              {status?.hasFalKey && (
+                <button
+                  type="button"
+                  onClick={() => save.mutate({ clearFal: true })}
+                  className="text-xs text-destructive hover:underline"
+                >
+                  {tr("Supprimer", "حذف")}
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Input
+                id="fal-key"
+                type={showFal ? "text" : "password"}
+                dir="ltr"
+                autoComplete="new-password"
+                placeholder={
+                  status?.hasFalKey
+                    ? `${status.falKeyHint} (${tr("enregistrée", "محفوظ")})`
+                    : status?.falEnvConfigured
+                      ? tr("Configurée via env serveur", "مُعدّ عبر الخادم")
+                      : "fal_..."
+                }
+                value={falKey}
+                onChange={(e) => setFalKey(e.target.value)}
+                className="pe-10 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => setShowFal((v) => !v)}
+                aria-label={tr("Afficher ou masquer", "إظهار أو إخفاء")}
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showFal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="rep-key">
+                {tr("Token Replicate (optionnel — Vidéo Kling)", "رمز Replicate (اختياري)")}
+              </Label>
+              {status?.hasReplicateToken && (
+                <button
+                  type="button"
+                  onClick={() => save.mutate({ clearRep: true })}
+                  className="text-xs text-destructive hover:underline"
+                >
+                  {tr("Supprimer", "حذف")}
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Input
+                id="rep-key"
+                type={showRep ? "text" : "password"}
+                dir="ltr"
+                autoComplete="new-password"
+                placeholder={
+                  status?.hasReplicateToken
+                    ? `${status.replicateTokenHint} (${tr("enregistré", "محفوظ")})`
+                    : status?.replicateEnvConfigured
+                      ? tr("Configuré via env serveur", "مُعدّ عبر الخادم")
+                      : "r8_..."
+                }
+                value={repToken}
+                onChange={(e) => setRepToken(e.target.value)}
+                className="pe-10 font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => setShowRep((v) => !v)}
+                aria-label={tr("Afficher ou masquer", "إظهار أو إخفاء")}
+                className="absolute end-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showRep ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          {!status?.hasServiceRole && !status?.openaiEnvConfigured && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5 text-xs text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+              {tr(
+                "Note : votre clé OpenAI enregistrée ici active immédiatement tous les outils IA admin (Photo → Produit, Rédaction, Studio Social). Pour que l'Assistant Shopping boutique utilise aussi GPT pour les visiteurs anonymes, ajoutez SUPABASE_SERVICE_ROLE_KEY (ou OPENAI_API_KEY) dans les variables serveur Vercel.",
+                "ملاحظة: مفتاح OpenAI المحفوظ هنا يفعّل فوراً كل أدوات الإدارة. لتمكين GPT للزوار غير المسجلين في مساعد التسوق، أضف SUPABASE_SERVICE_ROLE_KEY أو OPENAI_API_KEY في إعدادات Vercel.",
+              )}
+            </div>
+          )}
+
+          {testResult && (
+            <div
+              className={
+                testResult.ok
+                  ? "rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-medium text-emerald-900"
+                  : "rounded-xl border border-destructive/30 bg-destructive/10 px-3.5 py-2.5 text-xs font-medium text-destructive"
+              }
+            >
+              {testResult.text}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t px-5 py-4">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={testConn.isPending}
+          onClick={() => testConn.mutate()}
+        >
+          {testConn.isPending ? <Loader2 className="animate-spin" /> : <Zap />}
+          {tr("Tester la connexion OpenAI", "اختبار اتصال OpenAI")}
+        </Button>
+        <Button disabled={save.isPending}>
+          {save.isPending && <Loader2 className="animate-spin" />}
+          {tr("Enregistrer la configuration IA", "حفظ إعدادات الذكاء الاصطناعي")}
+        </Button>
+      </div>
     </form>
   );
 }

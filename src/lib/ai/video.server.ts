@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { falApiKey, replicateApiToken } from "@/integrations/supabase/secrets.server";
+import {
+  falApiKey as envFalApiKey,
+  replicateApiToken as envReplicateApiToken,
+} from "@/integrations/supabase/secrets.server";
+import type { ResolvedAiConfig } from "./config.server";
 
 export const aiVideoStartSchema = z.object({
   productName: z.string().trim().min(2).max(200),
@@ -86,10 +90,11 @@ function isPublicHttpsUrl(url?: string | null): url is string {
 
 export async function startGenerativeVideo(
   input: AiVideoStartInput,
+  config?: ResolvedAiConfig,
 ): Promise<AiVideoStartResponse> {
   const prompt = buildLifestyleVideoPrompt(input);
-  const falKey = falApiKey();
-  const repToken = replicateApiToken();
+  const falKey = config?.falApiKey ?? envFalApiKey();
+  const repToken = config?.replicateApiToken ?? envReplicateApiToken();
 
   if (falKey) {
     try {
@@ -222,9 +227,12 @@ export async function startGenerativeVideo(
   };
 }
 
-export async function pollGenerativeVideo(input: AiVideoPollInput): Promise<AiVideoPollResponse> {
+export async function pollGenerativeVideo(
+  input: AiVideoPollInput,
+  config?: ResolvedAiConfig,
+): Promise<AiVideoPollResponse> {
   if (input.provider === "fal") {
-    const falKey = falApiKey();
+    const falKey = config?.falApiKey ?? envFalApiKey();
     if (!falKey) return { ok: false, error: "FAL_KEY non configurée." };
     if (!input.statusUrl.startsWith("https://queue.fal.run/")) {
       return { ok: false, error: "URL de suivi invalide." };
@@ -253,7 +261,7 @@ export async function pollGenerativeVideo(input: AiVideoPollInput): Promise<AiVi
     return { ok: true, status: "completed", videoUrl: payload.video.url };
   }
 
-  const repToken = replicateApiToken();
+  const repToken = config?.replicateApiToken ?? envReplicateApiToken();
   if (!repToken) return { ok: false, error: "REPLICATE_API_TOKEN non configurée." };
   if (!input.statusUrl.startsWith("https://api.replicate.com/v1/")) {
     return { ok: false, error: "URL de suivi Replicate invalide." };

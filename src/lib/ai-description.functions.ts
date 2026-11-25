@@ -6,6 +6,7 @@ import {
   type DescriptionResponse,
 } from "./ai-description.schema";
 import { generateProductDescription } from "./ai/description.server";
+import { resolveAiConfig } from "./ai/config.server";
 
 /** Admin-only: write a ready-to-publish product description from its characteristics and a template. */
 export const generateDescription = createServerFn({ method: "POST" })
@@ -26,5 +27,6 @@ export const generateDescription = createServerFn({ method: "POST" })
     if (!template.is_active)
       return { ok: false, code: "template", error: "Ce modèle est désactivé." };
 
-    return generateProductDescription(template, data);
+    const aiConfig = await resolveAiConfig(context.supabase);
+    return generateProductDescription(template, data, aiConfig);
   });

@@ -295,6 +295,12 @@ const FALLBACK_SETTINGS: Database["public"]["Tables"]["store_settings"]["Row"] =
   announcement_ar: "توصيل مجاني ابتداءً من 220 د.ت — الدفع عند الاستلام",
   default_low_stock_threshold: 5,
   return_window_days: 14,
+  commission_fixed_fee: 0,
+  condition_options: ["new", "like_new", "good"],
+  default_commission_pct: 10,
+  reapprove_seller_edits: true,
+  seller_terms_ar: null,
+  seller_terms_fr: null,
   updated_at: new Date().toISOString(),
 };
 

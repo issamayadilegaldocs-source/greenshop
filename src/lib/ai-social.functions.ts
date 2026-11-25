@@ -6,6 +6,7 @@ import {
   type SocialCampaignResponse,
 } from "./ai-social.schema";
 import { generateSocialCampaign } from "./ai/social.server";
+import { resolveAiConfig } from "./ai/config.server";
 
 /**
  * Admin/staff-gated server function: generates a complete Facebook + Instagram +
@@ -23,5 +24,6 @@ export const generateSocialPack = createServerFn({ method: "POST" })
         error: "Fonction réservée à l'équipe et aux administrateurs.",
       };
     }
-    return generateSocialCampaign(data);
+    const aiConfig = await resolveAiConfig(context.supabase);
+    return generateSocialCampaign(data, aiConfig);
   });

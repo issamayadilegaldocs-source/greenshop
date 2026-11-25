@@ -1,7 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { APICallError, NoObjectGeneratedError, Output, streamText } from "ai";
 import { z } from "zod";
-import { aiModel, openAiApiKey } from "@/integrations/supabase/secrets.server";
+import {
+  aiModel as envAiModel,
+  openAiApiKey as envOpenAiApiKey,
+} from "@/integrations/supabase/secrets.server";
+import type { ResolvedAiConfig } from "./config.server";
 import type {
   DescriptionInput,
   DescriptionResult,
@@ -228,8 +232,10 @@ function errorFromStatus(status: number | undefined, fallback: string): Descript
 export async function generateProductDescription(
   template: TemplateForPrompt,
   input: DescriptionInput,
+  config?: ResolvedAiConfig,
 ): Promise<DescriptionResponse> {
-  const apiKey = openAiApiKey();
+  const apiKey = config?.openaiApiKey ?? envOpenAiApiKey();
+  const modelName = config?.aiModel ?? envAiModel();
   if (!apiKey) {
     return { ok: true, data: buildFallbackDescription(template, input) };
   }
@@ -239,7 +245,7 @@ export async function generateProductDescription(
   let streamError: unknown;
   try {
     const result = streamText({
-      model: provider.responses(aiModel()),
+      model: provider.responses(modelName),
       instructions: buildInstructions(template, input),
       messages: [{ role: "user", content: buildPrompt(input) }],
       output: Output.object({ schema: outputSchema }),

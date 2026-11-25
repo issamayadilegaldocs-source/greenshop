@@ -3,6 +3,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
+  Camera,
   ChevronLeft,
   ChevronRight,
   Package,
@@ -151,11 +152,18 @@ function ProductsPage() {
         )}
         actions={
           isAdmin ? (
-            <Button asChild>
-              <Link to="/admin/products/$productId" params={{ productId: "new" }}>
-                <Plus /> {tr("Nouveau produit", "منتج جديد")}
-              </Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link to="/admin/products/$productId" params={{ productId: "new" }}>
+                  <Camera /> {tr("Créer par photo IA", "إنشاء من صورة IA")}
+                </Link>
+              </Button>
+              <Button asChild>
+                <Link to="/admin/products/$productId" params={{ productId: "new" }}>
+                  <Plus /> {tr("Nouveau produit", "منتج جديد")}
+                </Link>
+              </Button>
+            </div>
           ) : undefined
         }
       />

@@ -21,6 +21,7 @@ import { pickLocale, useI18n } from "@/lib/i18n";
 import { Logo } from "./Logo";
 import { LanguageToggle } from "./LanguageToggle";
 import { AccountMenu } from "./AccountMenu";
+import { ShoppingAssistant } from "./ShoppingAssistant";
 
 function CategoryMenu({ categories }: { categories: PublicCategory[] }) {
   const { t, locale } = useI18n();
@@ -248,6 +249,7 @@ export function StoreLayout({ children }: { children: ReactNode }) {
           © {new Date().getFullYear()} Maison Noura. {t("footer.rights")}
         </div>
       </footer>
+      <ShoppingAssistant />
     </div>
   );
 }
