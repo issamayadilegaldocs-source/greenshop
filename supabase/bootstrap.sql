@@ -37,6 +37,7 @@
 --   0022_ai_provider_settings.sql
 --   0023_rbac_audit_and_storefront_plus.sql
 --   0024_lot1_table_grants.sql
+--   0025_wishlist_update_grant.sql
 -- =========================================================
 
 -- ===== 0000_clean_old_supabase =====
@@ -8765,6 +8766,10 @@ grant select on table public.newsletter_subscribers to authenticated;
 
 grant select on table public.homepage_sections to anon, authenticated;
 grant insert, update, delete on table public.homepage_sections to authenticated;
+
+-- ===== 0025_wishlist_update_grant.sql =====
+-- PostgREST upsert(..., { onConflict }) requires UPDATE privilege alongside INSERT/SELECT/DELETE.
+grant update on table public.wishlists to authenticated;
 
 commit;
 
