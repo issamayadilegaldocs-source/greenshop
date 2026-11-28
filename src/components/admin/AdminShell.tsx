@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 import {
   BarChart3,
   Boxes,
+  ClipboardList,
   ExternalLink,
+  Factory,
   FolderTree,
   LayoutDashboard,
   LogOut,
@@ -13,6 +15,7 @@ import {
   Package,
   RotateCcw,
   Settings,
+  Ship,
   ShoppingBag,
   Sparkles,
   Users,
@@ -34,6 +37,9 @@ type NavItem = {
     | "/admin/categories"
     | "/admin/products"
     | "/admin/inventory"
+    | "/admin/suppliers"
+    | "/admin/purchases"
+    | "/admin/imports"
     | "/admin/ai-writer"
     | "/admin/social-studio"
     | "/admin/settings"
@@ -77,6 +83,29 @@ const NAV: { group: [string, string]; items: NavItem[] }[] = [
         icon: Megaphone,
         fr: "Studio Social & Vidéo IA",
         ar: "استوديو الفيديو والإعلانات IA",
+      },
+    ],
+  },
+  {
+    group: ["Achats & Import (ERP)", "المشتريات والاستيراد"],
+    items: [
+      {
+        to: "/admin/suppliers",
+        icon: Factory,
+        fr: "Fournisseurs & Devises",
+        ar: "الموردون والعملات",
+      },
+      {
+        to: "/admin/purchases",
+        icon: ClipboardList,
+        fr: "Achats (PO) & Réappro",
+        ar: "أوامر الشراء والتموين",
+      },
+      {
+        to: "/admin/imports",
+        icon: Ship,
+        fr: "Imports & Landed Cost",
+        ar: "الشحنات وتكلفة الهبوط",
       },
     ],
   },

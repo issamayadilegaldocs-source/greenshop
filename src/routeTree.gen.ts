@@ -30,11 +30,14 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminCustomersRouteImport } from './routes/_authenticated/admin/customers'
 import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
 import { Route as AuthenticatedAdminFinancesRouteImport } from './routes/_authenticated/admin/finances'
+import { Route as AuthenticatedAdminImportsRouteImport } from './routes/_authenticated/admin/imports'
 import { Route as AuthenticatedAdminInventoryRouteImport } from './routes/_authenticated/admin/inventory'
+import { Route as AuthenticatedAdminPurchasesRouteImport } from './routes/_authenticated/admin/purchases'
 import { Route as AuthenticatedAdminReturnsRouteImport } from './routes/_authenticated/admin/returns'
 import { Route as AuthenticatedAdminReviewsRouteImport } from './routes/_authenticated/admin/reviews'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminSocialStudioRouteImport } from './routes/_authenticated/admin/social-studio'
+import { Route as AuthenticatedAdminSuppliersRouteImport } from './routes/_authenticated/admin/suppliers'
 import { Route as AuthenticatedAdminOrdersIndexRouteImport } from './routes/_authenticated/admin/orders.index'
 import { Route as AuthenticatedAdminOrdersOrderIdRouteImport } from './routes/_authenticated/admin/orders.$orderId'
 import { Route as AuthenticatedAdminProductsIndexRouteImport } from './routes/_authenticated/admin/products.index'
@@ -149,10 +152,22 @@ const AuthenticatedAdminFinancesRoute =
     path: '/finances',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
+const AuthenticatedAdminImportsRoute =
+  AuthenticatedAdminImportsRouteImport.update({
+    id: '/imports',
+    path: '/imports',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
 const AuthenticatedAdminInventoryRoute =
   AuthenticatedAdminInventoryRouteImport.update({
     id: '/inventory',
     path: '/inventory',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminPurchasesRoute =
+  AuthenticatedAdminPurchasesRouteImport.update({
+    id: '/purchases',
+    path: '/purchases',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminReturnsRoute =
@@ -177,6 +192,12 @@ const AuthenticatedAdminSocialStudioRoute =
   AuthenticatedAdminSocialStudioRouteImport.update({
     id: '/social-studio',
     path: '/social-studio',
+    getParentRoute: () => AuthenticatedAdminRouteRoute,
+  } as any)
+const AuthenticatedAdminSuppliersRoute =
+  AuthenticatedAdminSuppliersRouteImport.update({
+    id: '/suppliers',
+    path: '/suppliers',
     getParentRoute: () => AuthenticatedAdminRouteRoute,
   } as any)
 const AuthenticatedAdminOrdersIndexRoute =
@@ -224,11 +245,14 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/finances': typeof AuthenticatedAdminFinancesRoute
+  '/admin/imports': typeof AuthenticatedAdminImportsRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/admin/purchases': typeof AuthenticatedAdminPurchasesRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/social-studio': typeof AuthenticatedAdminSocialStudioRoute
+  '/admin/suppliers': typeof AuthenticatedAdminSuppliersRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/orders/$orderId': typeof AuthenticatedAdminOrdersOrderIdRoute
   '/admin/products/$productId': typeof AuthenticatedAdminProductsProductIdRoute
@@ -254,11 +278,14 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/admin/finances': typeof AuthenticatedAdminFinancesRoute
+  '/admin/imports': typeof AuthenticatedAdminImportsRoute
   '/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/admin/purchases': typeof AuthenticatedAdminPurchasesRoute
   '/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/admin/reviews': typeof AuthenticatedAdminReviewsRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/social-studio': typeof AuthenticatedAdminSocialStudioRoute
+  '/admin/suppliers': typeof AuthenticatedAdminSuppliersRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/orders/$orderId': typeof AuthenticatedAdminOrdersOrderIdRoute
   '/admin/products/$productId': typeof AuthenticatedAdminProductsProductIdRoute
@@ -287,11 +314,14 @@ export interface FileRoutesById {
   '/_authenticated/admin/customers': typeof AuthenticatedAdminCustomersRoute
   '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
   '/_authenticated/admin/finances': typeof AuthenticatedAdminFinancesRoute
+  '/_authenticated/admin/imports': typeof AuthenticatedAdminImportsRoute
   '/_authenticated/admin/inventory': typeof AuthenticatedAdminInventoryRoute
+  '/_authenticated/admin/purchases': typeof AuthenticatedAdminPurchasesRoute
   '/_authenticated/admin/returns': typeof AuthenticatedAdminReturnsRoute
   '/_authenticated/admin/reviews': typeof AuthenticatedAdminReviewsRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/social-studio': typeof AuthenticatedAdminSocialStudioRoute
+  '/_authenticated/admin/suppliers': typeof AuthenticatedAdminSuppliersRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/orders/$orderId': typeof AuthenticatedAdminOrdersOrderIdRoute
   '/_authenticated/admin/products/$productId': typeof AuthenticatedAdminProductsProductIdRoute
@@ -320,11 +350,14 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/dashboard'
     | '/admin/finances'
+    | '/admin/imports'
     | '/admin/inventory'
+    | '/admin/purchases'
     | '/admin/returns'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/social-studio'
+    | '/admin/suppliers'
     | '/admin/'
     | '/admin/orders/$orderId'
     | '/admin/products/$productId'
@@ -350,11 +383,14 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/dashboard'
     | '/admin/finances'
+    | '/admin/imports'
     | '/admin/inventory'
+    | '/admin/purchases'
     | '/admin/returns'
     | '/admin/reviews'
     | '/admin/settings'
     | '/admin/social-studio'
+    | '/admin/suppliers'
     | '/admin'
     | '/admin/orders/$orderId'
     | '/admin/products/$productId'
@@ -382,11 +418,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/customers'
     | '/_authenticated/admin/dashboard'
     | '/_authenticated/admin/finances'
+    | '/_authenticated/admin/imports'
     | '/_authenticated/admin/inventory'
+    | '/_authenticated/admin/purchases'
     | '/_authenticated/admin/returns'
     | '/_authenticated/admin/reviews'
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/social-studio'
+    | '/_authenticated/admin/suppliers'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/orders/$orderId'
     | '/_authenticated/admin/products/$productId'
@@ -557,11 +596,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFinancesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/imports': {
+      id: '/_authenticated/admin/imports'
+      path: '/imports'
+      fullPath: '/admin/imports'
+      preLoaderRoute: typeof AuthenticatedAdminImportsRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/inventory': {
       id: '/_authenticated/admin/inventory'
       path: '/inventory'
       fullPath: '/admin/inventory'
       preLoaderRoute: typeof AuthenticatedAdminInventoryRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/purchases': {
+      id: '/_authenticated/admin/purchases'
+      path: '/purchases'
+      fullPath: '/admin/purchases'
+      preLoaderRoute: typeof AuthenticatedAdminPurchasesRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/returns': {
@@ -590,6 +643,13 @@ declare module '@tanstack/react-router' {
       path: '/social-studio'
       fullPath: '/admin/social-studio'
       preLoaderRoute: typeof AuthenticatedAdminSocialStudioRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
+    '/_authenticated/admin/suppliers': {
+      id: '/_authenticated/admin/suppliers'
+      path: '/suppliers'
+      fullPath: '/admin/suppliers'
+      preLoaderRoute: typeof AuthenticatedAdminSuppliersRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
     '/_authenticated/admin/orders/': {
@@ -629,11 +689,14 @@ interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminCustomersRoute: typeof AuthenticatedAdminCustomersRoute
   AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
   AuthenticatedAdminFinancesRoute: typeof AuthenticatedAdminFinancesRoute
+  AuthenticatedAdminImportsRoute: typeof AuthenticatedAdminImportsRoute
   AuthenticatedAdminInventoryRoute: typeof AuthenticatedAdminInventoryRoute
+  AuthenticatedAdminPurchasesRoute: typeof AuthenticatedAdminPurchasesRoute
   AuthenticatedAdminReturnsRoute: typeof AuthenticatedAdminReturnsRoute
   AuthenticatedAdminReviewsRoute: typeof AuthenticatedAdminReviewsRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminSocialStudioRoute: typeof AuthenticatedAdminSocialStudioRoute
+  AuthenticatedAdminSuppliersRoute: typeof AuthenticatedAdminSuppliersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminOrdersOrderIdRoute: typeof AuthenticatedAdminOrdersOrderIdRoute
   AuthenticatedAdminProductsProductIdRoute: typeof AuthenticatedAdminProductsProductIdRoute
@@ -648,11 +711,14 @@ const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren
     AuthenticatedAdminCustomersRoute: AuthenticatedAdminCustomersRoute,
     AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
     AuthenticatedAdminFinancesRoute: AuthenticatedAdminFinancesRoute,
+    AuthenticatedAdminImportsRoute: AuthenticatedAdminImportsRoute,
     AuthenticatedAdminInventoryRoute: AuthenticatedAdminInventoryRoute,
+    AuthenticatedAdminPurchasesRoute: AuthenticatedAdminPurchasesRoute,
     AuthenticatedAdminReturnsRoute: AuthenticatedAdminReturnsRoute,
     AuthenticatedAdminReviewsRoute: AuthenticatedAdminReviewsRoute,
     AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
     AuthenticatedAdminSocialStudioRoute: AuthenticatedAdminSocialStudioRoute,
+    AuthenticatedAdminSuppliersRoute: AuthenticatedAdminSuppliersRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
     AuthenticatedAdminOrdersOrderIdRoute: AuthenticatedAdminOrdersOrderIdRoute,
     AuthenticatedAdminProductsProductIdRoute:
