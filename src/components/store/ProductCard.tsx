@@ -1,13 +1,34 @@
 import { Link } from "@tanstack/react-router";
-import { Star } from "lucide-react";
+import { Heart, Star } from "lucide-react";
+import { toast } from "sonner";
 import type { ProductCardData } from "@/lib/shop.functions";
 import { pickLocale, useI18n } from "@/lib/i18n";
+import { useWishlist } from "@/lib/wishlist";
+import { cn } from "@/lib/utils";
 import { PriceTag, discountPercent } from "./PriceTag";
 
 export function ProductCard({ product }: { product: ProductCardData }) {
   const { locale, tr } = useI18n();
+  const wishlist = useWishlist();
+  const saved = wishlist.has(product.id);
   const name = pickLocale(product, "name", locale);
   const off = discountPercent(product.price, product.promo_price);
+
+  async function onToggleWish(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const added = await wishlist.toggle(product.id);
+      toast.success(
+        added
+          ? tr("Ajouté aux favoris", "أضيف إلى المفضلة")
+          : tr("Retiré des favoris", "تمت الإزالة من المفضلة"),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+
   return (
     <Link
       to="/product/$slug"
@@ -41,6 +62,21 @@ export function ProductCard({ product }: { product: ProductCardData }) {
             </span>
           )}
         </div>
+        <button
+          type="button"
+          onClick={onToggleWish}
+          aria-label={
+            saved
+              ? tr("Retirer des favoris", "إزالة من المفضلة")
+              : tr("Ajouter aux favoris", "إضافة إلى المفضلة")
+          }
+          className={cn(
+            "absolute end-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-background/85 shadow-sm backdrop-blur transition hover:scale-105",
+            saved ? "text-rose-600" : "text-muted-foreground hover:text-rose-600",
+          )}
+        >
+          <Heart className={cn("h-4 w-4", saved && "fill-current")} />
+        </button>
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-3">
         {product.brand && (

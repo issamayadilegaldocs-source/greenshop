@@ -1,9 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Menu, Search, ShoppingBag, Truck } from "lucide-react";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { ChevronDown, Heart, Menu, Search, ShoppingBag, Truck } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -14,9 +15,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   publicCategoriesQuery,
+  searchCatalogSuggestions,
   storeSettingsQuery,
   type PublicCategory,
 } from "@/lib/catalog.functions";
+import { formatTND } from "@/lib/format";
 import { pickLocale, useI18n } from "@/lib/i18n";
 import { Logo } from "./Logo";
 import { LanguageToggle } from "./LanguageToggle";
@@ -59,34 +62,120 @@ function CategoryMenu({ categories }: { categories: PublicCategory[] }) {
 }
 
 function SearchBox({ className }: { className?: string }) {
-  const { t } = useI18n();
+  const { t, tr, locale } = useI18n();
   const navigate = useNavigate();
   const current = useRouterState({
     select: (st) =>
       st.location.pathname === "/shop" ? ((st.location.search as { q?: string }).q ?? "") : "",
   });
   const [value, setValue] = useState(current);
+  const [debounced, setDebounced] = useState("");
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef<HTMLFormElement>(null);
+
   useEffect(() => setValue(current), [current]);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value.trim()), 200);
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  useEffect(() => {
+    const onOutside = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, []);
+
+  const suggestions = useQuery({
+    queryKey: ["public", "search-suggestions", debounced],
+    enabled: debounced.length >= 2,
+    staleTime: 30_000,
+    queryFn: () => searchCatalogSuggestions({ data: { q: debounced } }),
+  });
+
   function submit(e: FormEvent) {
     e.preventDefault();
     const q = value.trim();
+    setOpen(false);
     navigate({ to: "/shop", search: q ? { q } : {} });
   }
+
+  const list = suggestions.data ?? [];
+
   return (
-    <form onSubmit={submit} className={className} role="search">
+    <form ref={boxRef} onSubmit={submit} className={className} role="search">
       <div className="relative">
         <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
           value={value}
           maxLength={120}
-          onChange={(e) => setValue(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setOpen(true);
+          }}
           placeholder={t("nav.search")}
           aria-label={t("nav.search")}
           className="h-9 rounded-full bg-muted/60 ps-9"
         />
+        {open && debounced.length >= 2 && list.length > 0 && (
+          <div className="absolute inset-x-0 top-full z-50 mt-1.5 overflow-hidden rounded-2xl border bg-card shadow-xl">
+            <ul className="divide-y">
+              {list.map((item) => (
+                <li key={item.id}>
+                  <Link
+                    to="/product/$slug"
+                    params={{ slug: item.slug }}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-muted/60"
+                  >
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                      {item.image && (
+                        <img src={item.image} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{pickLocale(item, "name", locale)}</p>
+                      <p className="text-xs font-semibold text-primary">
+                        {formatTND(item.promo_price ?? item.price)}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="submit"
+              className="block w-full border-t bg-muted/30 px-3 py-2 text-center text-xs font-medium text-primary hover:bg-muted/60"
+            >
+              {tr(
+                `Voir tous les résultats pour « ${debounced} »`,
+                `عرض كل النتائج لـ « ${debounced} »`,
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </form>
+  );
+}
+
+function WishlistButton() {
+  const { count } = useWishlist();
+  const { tr } = useI18n();
+  return (
+    <Button asChild variant="ghost" size="icon" className="relative">
+      <Link to="/wishlist" aria-label={tr("Favoris", "المفضلة")}>
+        <Heart />
+        {count > 0 && (
+          <span className="absolute -end-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
+      </Link>
+    </Button>
   );
 }
 
@@ -202,6 +291,7 @@ export function StoreLayout({ children }: { children: ReactNode }) {
           <SearchBox className="mx-auto hidden max-w-sm flex-1 lg:block" />
           <div className="ms-auto flex items-center gap-1.5 lg:ms-0">
             <LanguageToggle />
+            <WishlistButton />
             <CartButton />
             <AccountMenu />
           </div>

@@ -1,9 +1,11 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { queryOptions } from "@tanstack/react-query";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 import { supabasePublishableKey, supabaseUrl } from "@/integrations/supabase/env";
 import { createSupabaseFetch } from "@/integrations/supabase/fetch";
+import type { ProductCardData } from "./shop.functions";
 
 /** Read-only client with the publishable key; RLS limits it to public rows. */
 const publicClient = createServerOnlyFn(() => {
@@ -328,4 +330,152 @@ export const storeSettingsQuery = () =>
     queryKey: ["public", "settings"],
     queryFn: () => getStoreSettings(),
     staleTime: 60_000,
+  });
+
+export type PublicHomepageSection = {
+  id: string;
+  section_key: string;
+  title_fr: string;
+  title_ar: string;
+  subtitle_fr: string | null;
+  subtitle_ar: string | null;
+  is_enabled: boolean;
+  display_order: number;
+};
+
+export const getHomepageSections = createServerFn({ method: "GET" }).handler(
+  async (): Promise<PublicHomepageSection[]> => {
+    const sb = publicClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (sb as any)
+      .from("homepage_sections")
+      .select(
+        "id, section_key, title_fr, title_ar, subtitle_fr, subtitle_ar, is_enabled, display_order",
+      )
+      .order("display_order");
+    if (error) return [];
+    return (data ?? []) as PublicHomepageSection[];
+  },
+);
+
+export const homepageSectionsQuery = () =>
+  queryOptions({
+    queryKey: ["public", "homepage-sections"],
+    queryFn: () => getHomepageSections(),
+    staleTime: 60_000,
+  });
+
+export type SearchSuggestion = {
+  id: string;
+  slug: string;
+  name_fr: string;
+  name_ar: string | null;
+  brand: string | null;
+  price: number;
+  promo_price: number | null;
+  image: string | null;
+};
+
+const suggestionSchema = z.object({
+  q: z.string().trim().min(1).max(120),
+});
+
+export const searchCatalogSuggestions = createServerFn({ method: "GET" })
+  .inputValidator((input: { q: string }) => suggestionSchema.parse(input))
+  .handler(async ({ data }): Promise<SearchSuggestion[]> => {
+    const sb = publicClient();
+    const term = data.q.replace(/[%,()]/g, " ").trim();
+    if (!term) return [];
+    const { data: rows, error } = await sb
+      .from("products")
+      .select(
+        "id, slug, name_fr, name_ar, brand, price, promo_price, product_images(url, position)",
+      )
+      .eq("status", "published")
+      .or(
+        `name_fr.ilike.%${term}%,name_ar.ilike.%${term}%,sku.ilike.%${term}%,brand.ilike.%${term}%`,
+      )
+      .order("is_featured", { ascending: false })
+      .limit(6);
+    if (error || !rows) return [];
+    return rows.map((p) => {
+      const imgs = [...(p.product_images ?? [])].sort((a, b) => a.position - b.position);
+      return {
+        id: p.id,
+        slug: p.slug,
+        name_fr: p.name_fr,
+        name_ar: p.name_ar,
+        brand: p.brand,
+        price: Number(p.price),
+        promo_price: p.promo_price == null ? null : Number(p.promo_price),
+        image: imgs[0]?.url ?? null,
+      };
+    });
+  });
+
+const PG_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export const getProductsByIds = createServerFn({ method: "POST" })
+  .inputValidator((input: { ids: string[] }) =>
+    z.object({ ids: z.array(z.string().regex(PG_UUID_RE)).max(60) }).parse(input),
+  )
+  .handler(async ({ data }): Promise<ProductCardData[]> => {
+    if (!data.ids.length) return [];
+    const sb = publicClient();
+    const [{ data: rows, error }, avail] = await Promise.all([
+      sb
+        .from("products")
+        .select(
+          "id, slug, name_fr, name_ar, brand, price, promo_price, rating_avg, rating_count, is_featured, product_images(url, position)",
+        )
+        .in("id", data.ids)
+        .eq("status", "published"),
+      sb.rpc("get_variant_availability", { _product_ids: data.ids }),
+    ]);
+    if (error || !rows) return [];
+    const stock = new Map<string, number>();
+    for (const a of avail.data ?? []) {
+      stock.set(a.product_id, (stock.get(a.product_id) ?? 0) + Math.max(a.available, 0));
+    }
+    const byId = new Map(
+      rows.map((p) => {
+        const imgs = [...(p.product_images ?? [])].sort((a, b) => a.position - b.position);
+        const card: ProductCardData = {
+          id: p.id,
+          slug: p.slug,
+          name_fr: p.name_fr,
+          name_ar: p.name_ar,
+          brand: p.brand,
+          price: Number(p.price),
+          promo_price: p.promo_price == null ? null : Number(p.promo_price),
+          image: imgs[0]?.url ?? null,
+          rating_avg: Number(p.rating_avg),
+          rating_count: p.rating_count,
+          is_featured: p.is_featured,
+          in_stock: (stock.get(p.id) ?? 0) > 0,
+        };
+        return [p.id, card] as const;
+      }),
+    );
+    return data.ids.map((id) => byId.get(id)).filter((x): x is ProductCardData => Boolean(x));
+  });
+
+export const subscribeNewsletter = createServerFn({ method: "POST" })
+  .inputValidator((input: { email: string; locale?: "fr" | "ar" }) =>
+    z
+      .object({
+        email: z.string().trim().email("Adresse e-mail invalide."),
+        locale: z.enum(["fr", "ar"]).default("fr"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    const sb = publicClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (sb as any).rpc("subscribe_newsletter", {
+      _email: data.email,
+      _locale: data.locale,
+    });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

@@ -1,10 +1,11 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Banknote,
   BadgeCheck,
+  Heart,
   Minus,
   PackageX,
   Plus,
@@ -13,6 +14,7 @@ import {
   ShoppingBag,
   Star,
   Truck,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoreLayout } from "@/components/store/StoreLayout";
@@ -30,6 +32,7 @@ import {
 } from "@/lib/shop.functions";
 import { publicCategoriesQuery, type PublicCategory } from "@/lib/catalog.functions";
 import { MAX_LINE_QTY, useCart } from "@/lib/cart";
+import { recordRecentlyViewed, useWishlist } from "@/lib/wishlist";
 import { pickLocale, useI18n } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -99,14 +102,34 @@ function ProductPage() {
 
 function ProductView({ data, categories }: { data: ProductDetail; categories: PublicCategory[] }) {
   const { tr, locale } = useI18n();
+  const navigate = useNavigate();
   const cart = useCart();
+  const wishlist = useWishlist();
   const { product, images, specs, axes, variants, reviews, related } = data;
+  const savedInWish = wishlist.has(product.id);
   const [imageIndex, setImageIndex] = useState(0);
   const [selection, setSelection] = useState<Record<string, string>>(() => {
     const v = variants.find((x: PublicVariant) => x.available > 0) ?? variants[0];
     return v ? { ...v.options } : {};
   });
   const [qty, setQty] = useState(1);
+
+  useEffect(() => {
+    recordRecentlyViewed({
+      id: product.id,
+      slug: product.slug,
+      name_fr: product.name_fr,
+      name_ar: product.name_ar,
+      brand: product.brand,
+      price: product.price,
+      promo_price: product.promo_price,
+      image: images[0]?.url ?? null,
+      rating_avg: product.rating_avg,
+      rating_count: product.rating_count,
+      is_featured: false,
+      in_stock: variants.some((v) => v.available > 0),
+    });
+  }, [product, images, variants]);
 
   const variant = useMemo(() => {
     if (!axes.length) return variants[0];
@@ -174,8 +197,45 @@ function ProductView({ data, categories }: { data: ProductDetail; categories: Pu
     });
   }
 
+  function buyNow() {
+    if (!variant || available <= 0) return;
+    addToCart();
+    navigate({ to: "/cart" });
+  }
+
+  const productJsonLd = useMemo(
+    () =>
+      JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product.name_fr,
+        description: (product.description_fr ?? "").slice(0, 500),
+        image: images.map((i) => i.url),
+        brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
+        sku: variant?.sku ?? product.sku,
+        offers: {
+          "@type": "Offer",
+          priceCurrency: "TND",
+          price: (promo ?? price).toFixed(3),
+          availability:
+            available > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        },
+        ...(product.rating_count > 0
+          ? {
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: product.rating_avg.toFixed(1),
+                reviewCount: product.rating_count,
+              },
+            }
+          : {}),
+      }),
+    [product, images, variant, promo, price, available],
+  );
+
   return (
     <StoreLayout>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productJsonLd }} />
       <div className="mx-auto max-w-7xl px-4 py-8">
         <nav
           className="mb-5 flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
@@ -381,6 +441,33 @@ function ProductView({ data, categories }: { data: ProductDetail; categories: Pu
                   : available <= 0
                     ? tr("Épuisé", "نفد المخزون")
                     : tr("Ajouter au panier", "أضف إلى السلة")}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="secondary"
+                disabled={!variant || available <= 0}
+                onClick={buyNow}
+              >
+                <Zap className="h-4 w-4" />
+                {tr("Acheter maintenant", "اشترِ الآن")}
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                variant="outline"
+                onClick={async () => {
+                  const added = await wishlist.toggle(product.id);
+                  toast.success(
+                    added
+                      ? tr("Ajouté aux favoris", "أضيف إلى المفضلة")
+                      : tr("Retiré des favoris", "تمت الإزالة من المفضلة"),
+                  );
+                }}
+                aria-label={tr("Favoris", "المفضلة")}
+                className={cn(savedInWish && "border-rose-300 text-rose-600")}
+              >
+                <Heart className={cn("h-4 w-4", savedInWish && "fill-current")} />
               </Button>
             </div>
             {cart.ready && cart.count > 0 && (

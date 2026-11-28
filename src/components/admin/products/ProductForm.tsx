@@ -161,6 +161,28 @@ export function ProductForm({
   const [brand, setBrand] = useState(p?.brand ?? "");
   const [model, setModel] = useState(p?.model ?? "");
   const [warranty, setWarranty] = useState(p?.warranty ?? "");
+  const pExtra = p as
+    | (typeof p & {
+        barcode?: string | null;
+        weight_grams?: number | null;
+        dimensions_cm?: string | null;
+        video_url?: string | null;
+        seo_title_fr?: string | null;
+        seo_title_ar?: string | null;
+        seo_description_fr?: string | null;
+        seo_description_ar?: string | null;
+      })
+    | undefined;
+  const [barcode, setBarcode] = useState(pExtra?.barcode ?? "");
+  const [weightGrams, setWeightGrams] = useState(
+    pExtra?.weight_grams != null ? String(pExtra.weight_grams) : "",
+  );
+  const [dimensionsCm, setDimensionsCm] = useState(pExtra?.dimensions_cm ?? "");
+  const [videoUrl, setVideoUrl] = useState(pExtra?.video_url ?? "");
+  const [seoTitleFr, setSeoTitleFr] = useState(pExtra?.seo_title_fr ?? "");
+  const [seoTitleAr, setSeoTitleAr] = useState(pExtra?.seo_title_ar ?? "");
+  const [seoDescFr, setSeoDescFr] = useState(pExtra?.seo_description_fr ?? "");
+  const [seoDescAr, setSeoDescAr] = useState(pExtra?.seo_description_ar ?? "");
   const [status, setStatus] = useState<Status>((p?.status as Status) ?? "draft");
   const [featured, setFeatured] = useState(p?.is_featured ?? false);
   const [descFr, setDescFr] = useState(p?.description_fr ?? "");
@@ -470,6 +492,24 @@ export function ProductForm({
         })) as Json,
       });
       if (error) throw error;
+      if (data) {
+        const w = weightGrams.trim() ? Number(weightGrams) : null;
+        // Persist Lot 1 ERP / Logistics / SEO metadata columns
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
+          .from("products")
+          .update({
+            barcode: barcode.trim() || null,
+            weight_grams: w != null && Number.isFinite(w) && w >= 0 ? Math.round(w) : null,
+            dimensions_cm: dimensionsCm.trim() || null,
+            video_url: videoUrl.trim() || null,
+            seo_title_fr: seoTitleFr.trim() || null,
+            seo_title_ar: seoTitleAr.trim() || null,
+            seo_description_fr: seoDescFr.trim() || null,
+            seo_description_ar: seoDescAr.trim() || null,
+          })
+          .eq("id", data);
+      }
       return data;
     },
     onSuccess: async (id) => {
@@ -671,6 +711,92 @@ export function ProductForm({
                   value={warranty}
                   onChange={(e) => setWarranty(e.target.value)}
                   maxLength={80}
+                />
+              </Field>
+              <Field label={tr("Code-barres (EAN / UPC)", "الباركود")} hint="EAN-13 / SKU">
+                <Input
+                  dir="ltr"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value)}
+                  maxLength={64}
+                  placeholder="6190000123456"
+                />
+              </Field>
+              <Field
+                label={tr("Poids (grammes)", "الوزن (غرام)")}
+                hint={tr(
+                  "Utilisé pour le calcul du coût d'import",
+                  "يُستعمل لحساب تكلفة الشحن والاستيراد",
+                )}
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  value={weightGrams}
+                  onChange={(e) => setWeightGrams(e.target.value)}
+                  placeholder="450"
+                />
+              </Field>
+              <Field label={tr("Dimensions (L × l × H cm)", "الأبعاد (سم)")}>
+                <Input
+                  dir="ltr"
+                  value={dimensionsCm}
+                  onChange={(e) => setDimensionsCm(e.target.value)}
+                  maxLength={60}
+                  placeholder="25 × 18 × 12"
+                />
+              </Field>
+              <Field label={tr("URL Vidéo produit", "رابط فيديو المنتج")} className="md:col-span-2">
+                <Input
+                  dir="ltr"
+                  type="url"
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  maxLength={400}
+                  placeholder="https://..."
+                />
+              </Field>
+            </div>
+          </Section>
+
+          <Section
+            title={tr("SEO & Référencement", "تحسين محركات البحث (SEO)")}
+            description={tr(
+              "Méta-titres et descriptions personnalisés pour Google (optionnel).",
+              "عناوين وأوصاف مخصصة لمحركات البحث (اختياري).",
+            )}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label={tr("Meta Title (FR)", "عنوان SEO (فرنسية)")}>
+                <Input
+                  value={seoTitleFr}
+                  onChange={(e) => setSeoTitleFr(e.target.value)}
+                  maxLength={120}
+                />
+              </Field>
+              <Field label={tr("Meta Title (AR)", "عنوان SEO (عربية)")}>
+                <Input
+                  dir="rtl"
+                  value={seoTitleAr}
+                  onChange={(e) => setSeoTitleAr(e.target.value)}
+                  maxLength={120}
+                />
+              </Field>
+              <Field label={tr("Meta Description (FR)", "وصف SEO (فرنسية)")}>
+                <Textarea
+                  rows={2}
+                  value={seoDescFr}
+                  onChange={(e) => setSeoDescFr(e.target.value)}
+                  maxLength={240}
+                />
+              </Field>
+              <Field label={tr("Meta Description (AR)", "وصف SEO (عربية)")}>
+                <Textarea
+                  dir="rtl"
+                  rows={2}
+                  value={seoDescAr}
+                  onChange={(e) => setSeoDescAr(e.target.value)}
+                  maxLength={240}
                 />
               </Field>
             </div>

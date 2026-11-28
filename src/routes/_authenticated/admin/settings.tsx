@@ -29,7 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorState, PageHeader } from "@/components/admin/AdminShell";
+import {
+  AuditLogsPanel,
+  HomepageCmsPanel,
+  RbacRolesPanel,
+} from "@/components/admin/settings/RbacAuditCmsPanels";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/lib/i18n";
@@ -53,20 +59,49 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
 
 function SettingsPage() {
   const { tr } = useI18n();
-  const { isAdmin } = useAuth();
+  const { isAdmin, can } = useAuth();
   return (
     <div className="space-y-6">
       <PageHeader
         icon={Settings}
-        title={tr("Paramètres", "الإعدادات")}
+        title={tr("Paramètres & Sécurité", "الإعدادات والأمان")}
         description={tr(
-          "Livraison, contact, retours et équipe.",
-          "التوصيل، الاتصال، الإرجاع والفريق.",
+          "Boutique, clés IA, matrice RBAC 10 rôles, page d'accueil CMS et journal d'audit.",
+          "المتجر، مفاتيح الذكاء الاصطناعي، مصفوفة الصلاحيات، الصفحة الرئيسية وسجل التدقيق.",
         )}
       />
-      <StoreSettingsCard readOnly={!isAdmin} />
-      {isAdmin && <AiSettingsCard />}
-      {isAdmin && <TeamCard />}
+      {isAdmin ? (
+        <Tabs defaultValue="store" className="space-y-6">
+          <TabsList className="flex h-auto flex-wrap justify-start gap-1">
+            <TabsTrigger value="store">{tr("Boutique & Livraison", "المتجر والتوصيل")}</TabsTrigger>
+            <TabsTrigger value="ai">{tr("IA & Clés API", "الذكاء الاصطناعي")}</TabsTrigger>
+            <TabsTrigger value="rbac">
+              {tr("Rôles & Permissions (10)", "الأدوار والصلاحيات (10)")}
+            </TabsTrigger>
+            <TabsTrigger value="cms">{tr("Page d'accueil CMS", "الصفحة الرئيسية CMS")}</TabsTrigger>
+            <TabsTrigger value="audit">{tr("Journal d'audit", "سجل التدقيق")}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="store" className="space-y-6">
+            <StoreSettingsCard readOnly={!can("settings.manage")} />
+            <TeamCard />
+          </TabsContent>
+          <TabsContent value="ai">
+            <AiSettingsCard />
+          </TabsContent>
+          <TabsContent value="rbac">
+            <RbacRolesPanel />
+          </TabsContent>
+          <TabsContent value="cms">
+            <HomepageCmsPanel />
+          </TabsContent>
+          <TabsContent value="audit">
+            <AuditLogsPanel />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <StoreSettingsCard readOnly={!can("settings.manage")} />
+      )}
     </div>
   );
 }

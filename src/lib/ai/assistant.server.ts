@@ -246,6 +246,25 @@ function buildSmartCatalogFallback(
     "montre",
     "propose",
     "recommande",
+    "promo",
+    "promos",
+    "promotion",
+    "promotions",
+    "offre",
+    "offres",
+    "solde",
+    "soldes",
+    "افضل",
+    "أفضل",
+    "عروض",
+    "عرض",
+    "تخفيضات",
+    "تخفيض",
+    "هدية",
+    "فكرة",
+    "اقل",
+    "أقل",
+    "من",
   ]);
   const tokens = q
     .split(/[^a-z0-9\u0600-\u06FF]+/)
@@ -268,15 +287,19 @@ function buildSmartCatalogFallback(
       for (const tok of tokens) {
         if (hay.includes(tok)) score += 3;
       }
-      if (asksPromo && item.promo_price != null && item.promo_price < item.price) score += 4;
+      if (asksPromo && item.promo_price != null && item.promo_price < item.price) score += 6;
       if (maxBudget != null) {
-        if (effectivePrice(item) <= maxBudget) score += 3;
-        else score -= 10;
+        if (effectivePrice(item) <= maxBudget) score += 4;
+        else score -= 20;
       }
       if (item.in_stock) score += 1;
       return { item, score };
     })
-    .filter((x) => x.score > 1 || (maxBudget != null && effectivePrice(x.item) <= maxBudget))
+    .filter((x) => {
+      if (maxBudget != null) return effectivePrice(x.item) <= maxBudget && x.item.in_stock;
+      if (asksPromo) return x.item.promo_price != null && x.item.promo_price < x.item.price;
+      return x.score > 1;
+    })
     .sort((a, b) => b.score - a.score || effectivePrice(a.item) - effectivePrice(b.item));
 
   let picks = scored.slice(0, 3).map((x) => x.item);

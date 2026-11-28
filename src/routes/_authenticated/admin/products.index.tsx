@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -6,8 +6,12 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Download,
+  Loader2,
   Package,
   Pencil,
+  Percent,
   Plus,
   Search,
   Star,
@@ -16,7 +20,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -65,7 +79,9 @@ const ALL = "__all__";
 
 function ProductsPage() {
   const { tr, locale } = useI18n();
-  const { isAdmin } = useAuth();
+  const { isAdmin, can } = useAuth();
+  const canManage = isAdmin || can("products.manage");
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -73,6 +89,10 @@ function ProductsPage() {
   const [cat, setCat] = useState(ALL);
   const [page, setPage] = useState(0);
   const [toDelete, setToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkMode, setBulkMode] = useState<"percent" | "fixed">("percent");
+  const [bulkDelta, setBulkDelta] = useState("10");
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q.trim()), 250);
@@ -116,6 +136,82 @@ function ProductsPage() {
     },
   });
 
+  const duplicate = useMutation({
+    mutationFn: async (sourceId: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc("admin_duplicate_product", {
+        _source_id: sourceId,
+      });
+      if (error) throw error;
+      return String(data);
+    },
+    onSuccess: (newId) => {
+      toast.success(tr("Produit dupliqué en brouillon", "تم نسخ المنتج كمسودة"));
+      qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      navigate({ to: "/admin/products/$productId", params: { productId: newId } });
+    },
+    onError: (e) => toast.error(dbErrorMessage(e)),
+  });
+
+  const bulkPrice = useMutation({
+    mutationFn: async () => {
+      const delta = Number(bulkDelta.replace(",", "."));
+      if (!Number.isFinite(delta) || delta === 0) {
+        throw new Error(tr("Valeur d'ajustement invalide.", "قيمة التعديل غير صالحة."));
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc("admin_bulk_adjust_product_prices", {
+        _product_ids: selectedIds,
+        _mode: bulkMode,
+        _delta: delta,
+      });
+      if (error) throw error;
+      return Number(data ?? 0);
+    },
+    onSuccess: (count) => {
+      setBulkOpen(false);
+      setSelectedIds([]);
+      toast.success(
+        tr(`${count} produit(s) mis à jour (journalisé)`, `تم تحديث أسعار ${count} منتج`),
+      );
+      qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      qc.invalidateQueries({ queryKey: ["public"] });
+    },
+    onError: (e) => toast.error(dbErrorMessage(e)),
+  });
+
+  function exportCsv() {
+    const rows = list.data?.rows ?? [];
+    if (!rows.length) return;
+    const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const headers = ["SKU", "Nom FR", "Categorie", "Prix (TND)", "Promo (TND)", "Stock", "Statut"];
+    const lines = [
+      headers.map(esc).join(","),
+      ...rows.map((p) => {
+        const active = (p.product_variants ?? []).filter((v) => v.is_active);
+        const stock = active.reduce((n, v) => n + (v.inventory?.available ?? 0), 0);
+        return [
+          p.sku,
+          p.name_fr,
+          catName(p.category_id),
+          p.price,
+          p.promo_price ?? "",
+          stock,
+          p.status,
+        ]
+          .map(esc)
+          .join(",");
+      }),
+    ];
+    const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `produits-maison-noura-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const remove = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.rpc("delete_product", { _product_id: id });
@@ -151,8 +247,11 @@ function ProductsPage() {
           "الكتالوج: الأسعار، المتغيرات، الصور والمخزون.",
         )}
         actions={
-          isAdmin ? (
+          canManage ? (
             <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={exportCsv}>
+                <Download /> {tr("Exporter CSV", "تصدير CSV")}
+              </Button>
               <Button asChild variant="outline">
                 <Link to="/admin/products/$productId" params={{ productId: "new" }}>
                   <Camera /> {tr("Créer par photo IA", "إنشاء من صورة IA")}
@@ -206,6 +305,26 @@ function ProductsPage() {
         </Select>
       </div>
 
+      {canManage && selectedIds.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary-soft/60 px-4 py-2.5 text-sm">
+          <span className="font-medium">
+            {tr(
+              `${selectedIds.length} produit(s) sélectionné(s)`,
+              `تم تحديد ${selectedIds.length} منتج`,
+            )}
+          </span>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => setSelectedIds([])}>
+              {tr("Tout désélectionner", "إلغاء التحديد")}
+            </Button>
+            <Button size="sm" onClick={() => setBulkOpen(true)}>
+              <Percent className="h-3.5 w-3.5" />
+              {tr("Ajuster les prix en masse", "تعديل الأسعار جماعياً")}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {list.error ? (
         <ErrorState error={list.error} onRetry={() => list.refetch()} />
       ) : list.isLoading ? (
@@ -238,6 +357,21 @@ function ProductsPage() {
             <table className="w-full text-sm">
               <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
                 <tr>
+                  {canManage && (
+                    <th className="w-10 px-3 py-3">
+                      <Checkbox
+                        checked={
+                          list.data.rows.length > 0 &&
+                          list.data.rows.every((r) => selectedIds.includes(r.id))
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) setSelectedIds(list.data.rows.map((r) => r.id));
+                          else setSelectedIds([]);
+                        }}
+                        aria-label={tr("Tout sélectionner", "تحديد الكل")}
+                      />
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-start font-medium">{tr("Produit", "المنتج")}</th>
                   <th className="px-4 py-3 text-start font-medium">{tr("Catégorie", "القسم")}</th>
                   <th className="px-4 py-3 text-end font-medium">{tr("Prix", "السعر")}</th>
@@ -259,6 +393,19 @@ function ProductsPage() {
                   const st = STATUS_LABELS[p.status];
                   return (
                     <tr key={p.id} className="hover:bg-muted/30">
+                      {canManage && (
+                        <td className="px-3 py-3">
+                          <Checkbox
+                            checked={selectedIds.includes(p.id)}
+                            onCheckedChange={(checked) =>
+                              setSelectedIds((prev) =>
+                                checked ? [...prev, p.id] : prev.filter((x) => x !== p.id),
+                              )
+                            }
+                            aria-label={p.name_fr}
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <span className="h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-primary-soft">
@@ -332,6 +479,19 @@ function ProductsPage() {
                               <Pencil />
                             </Link>
                           </Button>
+                          {canManage && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              disabled={duplicate.isPending}
+                              onClick={() => duplicate.mutate(p.id)}
+                              aria-label={tr("Dupliquer", "نسخ")}
+                              title={tr("Dupliquer", "نسخ")}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          )}
                           {isAdmin && (
                             <Button
                               size="icon"
@@ -383,6 +543,63 @@ function ProductsPage() {
           </div>
         </div>
       )}
+
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{tr("Ajuster les prix en masse", "تعديل الأسعار جماعياً")}</DialogTitle>
+            <DialogDescription>
+              {tr(
+                `Applique une variation de prix sur les ${selectedIds.length} produit(s) sélectionné(s) et leurs variantes. L'opération est enregistrée dans le journal d'audit.`,
+                `يطبق تعديلاً على أسعار ${selectedIds.length} منتج(ات) محددة ومتغيراتها مع تسجيل العملية في سجل التدقيق.`,
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{tr("Type d'ajustement", "نوع التعديل")}</Label>
+              <Select value={bulkMode} onValueChange={(v) => setBulkMode(v as "percent" | "fixed")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percent">
+                    {tr("Pourcentage (% — ex. +10 ou -15)", "نسبة مئوية (% — مثال +10 أو -15)")}
+                  </SelectItem>
+                  <SelectItem value="fixed">
+                    {tr(
+                      "Montant fixe en DT (ex. +5 ou -10)",
+                      "مبلغ ثابت بالدينار (مثال +5 أو -10)",
+                    )}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>
+                {bulkMode === "percent"
+                  ? tr("Variation (%)", "التغيير (%)")
+                  : tr("Montant (DT)", "المبلغ (د.ت)")}
+              </Label>
+              <Input
+                type="number"
+                step="any"
+                value={bulkDelta}
+                onChange={(e) => setBulkDelta(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>
+              {tr("Annuler", "إلغاء")}
+            </Button>
+            <Button disabled={bulkPrice.isPending} onClick={() => bulkPrice.mutate()}>
+              {bulkPrice.isPending && <Loader2 className="animate-spin" />}
+              {tr("Appliquer la modification", "تطبيق التعديل")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>

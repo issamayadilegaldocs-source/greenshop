@@ -63,7 +63,7 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
       sb
         .from("products")
         .select(
-          "id, slug, name_fr, name_ar, brand, price, promo_price, category_id, description_fr, description_ar, is_featured, product_images(url, position), product_variants(id, sku, price, promo_price, is_active, inventory(available))",
+          "id, slug, name_fr, name_ar, brand, price, promo_price, category_id, description_fr, description_ar, is_featured, product_images(url, position), product_variants(id, sku, price, promo_price, is_active)",
         )
         .eq("status", "published")
         .order("is_featured", { ascending: false })
@@ -71,22 +71,28 @@ export const sendAssistantMessage = createServerFn({ method: "POST" })
         .limit(60),
     ]);
 
+    const productRows = productsRes.data ?? [];
+    const productIds = productRows.map((p) => p.id);
+    const availByVariant = new Map<string, number>();
+    if (productIds.length > 0) {
+      const { data: availRows } = await sb.rpc("get_variant_availability", {
+        _product_ids: productIds,
+      });
+      for (const a of availRows ?? []) {
+        availByVariant.set(a.variant_id, Math.max(0, Number(a.available ?? 0)));
+      }
+    }
+
     const catById = new Map(
       (categoriesRes.data ?? []).map((c) => [c.id, { fr: c.name_fr, ar: c.name_ar }]),
     );
 
-    const catalog: AssistantStoreContext["catalog"] = (productsRes.data ?? []).map((p) => {
+    const catalog: AssistantStoreContext["catalog"] = productRows.map((p) => {
       const imgs = [...(p.product_images ?? [])].sort((a, b) => a.position - b.position);
       const variants = (p.product_variants ?? []).filter((v) => v.is_active);
       const inStockVariant =
-        variants.find((v) => {
-          const inv = Array.isArray(v.inventory) ? v.inventory[0] : v.inventory;
-          return (inv?.available ?? 0) > 0;
-        }) ?? variants[0];
-      const inStock = variants.some((v) => {
-        const inv = Array.isArray(v.inventory) ? v.inventory[0] : v.inventory;
-        return (inv?.available ?? 0) > 0;
-      });
+        variants.find((v) => (availByVariant.get(v.id) ?? 0) > 0) ?? variants[0];
+      const inStock = variants.some((v) => (availByVariant.get(v.id) ?? 0) > 0);
       const cat = p.category_id ? catById.get(p.category_id) : undefined;
       return {
         id: p.id,

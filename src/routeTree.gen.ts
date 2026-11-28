@@ -16,7 +16,9 @@ import { Route as CartRouteImport } from './routes/cart'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ShopRouteImport } from './routes/shop'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TrackOrderRouteImport } from './routes/track-order'
+import { Route as WishlistRouteImport } from './routes/wishlist'
 import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authenticated/admin/route'
 import { Route as AuthenticatedAdminSetupRouteImport } from './routes/_authenticated/admin-setup'
 import { Route as AuthenticatedMyAccountRouteImport } from './routes/_authenticated/my-account'
@@ -72,9 +74,19 @@ const ShopRoute = ShopRouteImport.update({
   path: '/shop',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TrackOrderRoute = TrackOrderRouteImport.update({
   id: '/track-order',
   path: '/track-order',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WishlistRoute = WishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRouteRoute = AuthenticatedAdminRouteRouteImport.update({
@@ -199,7 +211,9 @@ export interface FileRoutesByFullPath {
   '/categories': typeof CategoriesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/shop': typeof ShopRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/track-order': typeof TrackOrderRoute
+  '/wishlist': typeof WishlistRoute
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/admin-setup': typeof AuthenticatedAdminSetupRoute
   '/my-account': typeof AuthenticatedMyAccountRoute
@@ -228,7 +242,9 @@ export interface FileRoutesByTo {
   '/categories': typeof CategoriesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/shop': typeof ShopRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/track-order': typeof TrackOrderRoute
+  '/wishlist': typeof WishlistRoute
   '/admin-setup': typeof AuthenticatedAdminSetupRoute
   '/my-account': typeof AuthenticatedMyAccountRoute
   '/my-orders': typeof AuthenticatedMyOrdersRoute
@@ -258,7 +274,9 @@ export interface FileRoutesById {
   '/categories': typeof CategoriesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/shop': typeof ShopRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/track-order': typeof TrackOrderRoute
+  '/wishlist': typeof WishlistRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/admin-setup': typeof AuthenticatedAdminSetupRoute
   '/_authenticated/my-account': typeof AuthenticatedMyAccountRoute
@@ -289,7 +307,9 @@ export interface FileRouteTypes {
     | '/categories'
     | '/reset-password'
     | '/shop'
+    | '/sitemap.xml'
     | '/track-order'
+    | '/wishlist'
     | '/admin'
     | '/admin-setup'
     | '/my-account'
@@ -318,7 +338,9 @@ export interface FileRouteTypes {
     | '/categories'
     | '/reset-password'
     | '/shop'
+    | '/sitemap.xml'
     | '/track-order'
+    | '/wishlist'
     | '/admin-setup'
     | '/my-account'
     | '/my-orders'
@@ -347,7 +369,9 @@ export interface FileRouteTypes {
     | '/categories'
     | '/reset-password'
     | '/shop'
+    | '/sitemap.xml'
     | '/track-order'
+    | '/wishlist'
     | '/_authenticated/admin'
     | '/_authenticated/admin-setup'
     | '/_authenticated/my-account'
@@ -378,7 +402,9 @@ export interface RootRouteChildren {
   CategoriesRoute: typeof CategoriesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ShopRoute: typeof ShopRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TrackOrderRoute: typeof TrackOrderRoute
+  WishlistRoute: typeof WishlistRoute
   ProductSlugRoute: typeof ProductSlugRoute
 }
 
@@ -433,11 +459,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/track-order': {
       id: '/track-order'
       path: '/track-order'
       fullPath: '/track-order'
       preLoaderRoute: typeof TrackOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wishlist': {
+      id: '/wishlist'
+      path: '/wishlist'
+      fullPath: '/wishlist'
+      preLoaderRoute: typeof WishlistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -651,7 +691,9 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriesRoute: CategoriesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ShopRoute: ShopRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TrackOrderRoute: TrackOrderRoute,
+  WishlistRoute: WishlistRoute,
   ProductSlugRoute: ProductSlugRoute,
 }
 export const routeTree = rootRouteImport
